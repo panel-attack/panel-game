@@ -2,6 +2,7 @@ local class = require("common.lib.class")
 local ui = require("client.src.ui")
 local DebugSettings = require("client.src.debug.DebugSettings")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local Layout = require("client.src.ui.Layout")
 
 local function createDebugBoolSelector(debugKey, onChangeFn)
   return ui.BoolSelector({
@@ -79,10 +80,10 @@ end, ui.Menu)
 -- We need a factory because menu items must be passed into the base class init
 function DebugMenu.makeDebugMenu(options)
   options = options or {}
-  options.x = 0
-  options.y = 0
-  options.hAlign = "center"
-  options.vAlign = "center"
+  -- centered on whatever it is added to
+  local layoutRules = options.layoutRules and shallowcpy(options.layoutRules) or {}
+  layoutRules.floating = layoutRules.floating or Layout.floatAt("centerCenter")
+  options.layoutRules = layoutRules
   options.menuItems = buildDebugMenuItems(options)
   return DebugMenu(options)
 end

@@ -1,14 +1,30 @@
 local PATH = (...):gsub('%.[^%.]+$', '')
 local UIElement = require(PATH .. ".UIElement")
+local Layout = require(PATH .. ".Layout")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+
+local NO_SIZING = {}
+
+-- Returns the width of the text's widest word in the font, the narrowest the text wraps to
+---@param font love.Font
+---@param text string
+---@return number
+local function widestWord(font, text)
+  local widest = 0
+  for word in text:gmatch("%S+") do
+    widest = math.max(widest, font:getWidth(word))
+  end
+  return widest
+end
 
 ---@class LabelOptions : UiElementOptions
 ---@field text string The raw text or localization key
 ---@field translate boolean? Whether the game looks for a localization for text or not
 ---@field replacements string[]? Additional strings to perform string format on a localized key with parts marked for replacement
 ---@field fontSize integer? The size of the font
----@field wrapWidth? number the number of pixels to go before wrapping
+---@field wrapWidth number? wraps the text, the label being at most this wide with its padding: its sizing.horizontal.max
+---@field textAlign ("left" | "center" | "right")? how wrapped lines are aligned within the label, left if not given
 ---@field padding number? Uniform padding on all sides in pixels
 ---@field paddingTop number? Top padding in pixels
 ---@field paddingRight number? Right padding in pixels
@@ -16,19 +32,24 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@field paddingLeft number? Left padding in pixels
 ---@field textColor table? List of red, green, blue, and alpha color for text
 
+-- Text, sized by the layout to fit it unless its sizing is fixed. Text that wraps is laid out again at the width the
+-- layout gives it, which is at most its wrap width.
 ---@class Label : UiElement
 ---@field text string The raw text or localization key
 ---@field translate boolean Whether the game looks for a localization for text or not
 ---@field replacementTable string[]? Additional strings to perform string format on a localized key with parts marked for replacement
+---@field shownText string the text shown, translated when the label translates
 ---@field fontSize integer The size of the font
----@field wrapWidth? number the number of pixels to go before wrapping
----@field font love.Font Cached font for recreating the love.TextBatch on changes
+---@field wraps boolean true for text that wraps at the label's width
+---@field textAlign ("left" | "center" | "right") how wrapped lines are aligned within the label
 ---@field fillColors table? List of red, green, blue, and alpha color for fill, no fill if nil
 ---@field strokeColors table? List of red, green, blue, and alpha color for stroke, no stroke if nil
 ---@field textColor table? List of red, green, blue, and alpha color for text
 ---@field drawable love.TextBatch Cached love.TextBatch for redrawing
----@field autoSizeWidth boolean true if the text should change the width
----@field autoSizeHeight boolean true if the text should change the height
+---@field contentWidth number the width of the text on one line, or wrapped at its width cap, with the padding
+---@field smallestWidth number the narrowest the text wraps to, with the padding
+---@field contentHeight number the height of the laid out text with the padding
+---@field formattedWidth number? the label's width the text was last laid out at, nil for text that doesn't wrap
 ---@field paddingTop number Top padding in pixels
 ---@field paddingRight number Right padding in pixels
 ---@field paddingBottom number Bottom padding in pixels
@@ -36,12 +57,8 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 ---@overload fun(options: LabelOptions): Label
 local Label = class(
   function(self, options)
-    self.hAlign = options.hAlign or "left"
-    self.vAlign = options.vAlign or "top"
-    self.hFill = options.hFill or false
-    self.autoSizeWidth = self.width == 0
-    self.autoSizeHeight = self.height == 0
-    self.wrapWidth = options.wrapWidth or nil
+    self.textAlign = options.textAlign or "left"
+    self.wraps = options.wrapWidth ~= nil
     self.fontSize = options.fontSize or GraphicsUtil.fontSize
     local padding = options.padding or 0
     self.paddingTop = options.paddingTop or padding
@@ -49,6 +66,9 @@ local Label = class(
     self.paddingBottom = options.paddingBottom or padding
     self.paddingLeft = options.paddingLeft or padding
     self.textColor = options.textColor
+    if options.wrapWidth then
+      self:limitWidth(options.wrapWidth)
+    end
 
     self:setText(options.text, options.replacements, options.translate)
   end,
@@ -97,12 +117,23 @@ function Label:setText(text, replacementTable, translate)
   self:refreshFormatting()
 end
 
--- Sets the wrapping and alignment of the text
---@field wrapWidth number the number of pixels to go before wrapping
---@field hAlign String left center or right
-function Label:setWrap(wrapWidth, hAlign)
-  self.wrapWidth = wrapWidth
-  self.hAlign = hAlign or self.hAlign
+-- Caps the label's width, its padding included, through its width sizing; a fixed width is left as it is
+---@param most number?
+function Label:limitWidth(most)
+  local sizing = self.layoutRules.sizing or NO_SIZING
+  local width = sizing.horizontal or Layout.FIT
+  if width.type ~= "fixed" and width.max ~= most then
+    self:setLayoutRule("sizing", {horizontal = {type = width.type, min = width.min, max = most}, vertical = sizing.vertical})
+  end
+end
+
+-- Wraps the text at the label's width, which is at most the wrap width
+---@param wrapWidth number the widest the label is with its padding
+---@param textAlign ("left" | "center" | "right")? how the wrapped lines are aligned, unchanged if not given
+function Label:setWrap(wrapWidth, textAlign)
+  self.wraps = true
+  self.textAlign = textAlign or self.textAlign
+  self:limitWidth(wrapWidth)
   self:refreshFormatting()
 end
 
@@ -135,35 +166,107 @@ function Label:setTextColor(red, green, blue, alpha)
   self.textColor = {red, green, blue, alpha}
 end
 
+-- Lays the text out at the label's current width and measures it, marking the layout dirty if its measure changed
 function Label:refreshFormatting()
-  local text = self.text
-
   if self.translate then
-    text = loc(self.text, unpack(self.replacementTable))
-  end
-
-  local contentWidth = self.wrapWidth
-  if contentWidth and (self.paddingLeft + self.paddingRight) > 0 then
-    contentWidth = contentWidth - self.paddingLeft - self.paddingRight
-  end
-
-  if contentWidth then
-    self.drawable:setf(text, contentWidth, self.hAlign)
+    self.shownText = loc(self.text, unpack(self.replacementTable))
   else
-    self.drawable:set(text)
+    self.shownText = self.text
   end
-  
-  if self.autoSizeWidth then
-    self.width = self.drawable:getWidth() + self.paddingLeft + self.paddingRight
-  end
+  self:formatAt(self:getCurrentWidth())
+  self:measureText()
+end
 
-  if self.autoSizeHeight then
-    self.height = self.drawable:getHeight() + self.paddingTop + self.paddingBottom
+---@return number? # the width wrapping text is laid out at now, with the padding: the last layout's, or its width cap
+--- before its first layout; nil for text that doesn't wrap
+function Label:getCurrentWidth()
+  if not self.wraps then
+    return nil
+  end
+  if self.sizedWidth then
+    return self:getInnerWidth(self.sizedWidth)
+  end
+  return self:getWidthCap()
+end
+
+---@return number? # the widest the label's width sizing lets it be with its padding, nil without a cap
+function Label:getWidthCap()
+  local sizing = self.layoutRules.sizing
+  return sizing and sizing.horizontal and sizing.horizontal.max
+end
+
+-- The width the layout leaves the text and its padding inside the label's layout padding, which a label rarely has
+---@param width number the label's width
+---@return number
+function Label:getInnerWidth(width)
+  local padding = self.layoutRules.padding
+  if padding then
+    return width - (padding.left or 0) - (padding.right or 0)
+  end
+  return width
+end
+
+-- Lays the text out at the width, its padding included: wrapped, or on one line without a width
+---@param width number?
+function Label:formatAt(width)
+  if self.wraps and width then
+    self.drawable:setf(self.shownText, math.max(0, width - self.paddingLeft - self.paddingRight), self.textAlign)
+  else
+    self.drawable:set(self.shownText)
+  end
+  self.formattedWidth = width
+end
+
+-- Measures the text with the padding, marking the layout dirty if the measure changed. Wrapping text with a width cap
+-- is as wide as its widest line wrapped at the cap.
+function Label:measureText()
+  local paddingX = self.paddingLeft + self.paddingRight
+  local width, smallest
+  if self.wraps then
+    local font = self.drawable:getFont()
+    local cap = self:getWidthCap()
+    if cap then
+      width = font:getWrap(self.shownText, math.max(0, cap - paddingX)) + paddingX
+    else
+      width = font:getWidth(self.shownText) + paddingX
+    end
+    smallest = math.min(width, widestWord(font, self.shownText) + paddingX)
+  else
+    width = self.drawable:getWidth() + paddingX
+    smallest = width
+  end
+  local height = self.drawable:getHeight() + self.paddingTop + self.paddingBottom
+  if width ~= self.contentWidth or smallest ~= self.smallestWidth or height ~= self.contentHeight then
+    self.contentWidth, self.smallestWidth, self.contentHeight = width, smallest, height
+    self:markLayoutDirty()
   end
 end
 
+---@return number # the width of the text with the padding, which the layout fits the label to
+---@return number # the narrowest the text wraps to with the padding, which a flow may shrink the label to
+function Label:measureContentWidth()
+  return self.contentWidth, self.smallestWidth
+end
+
+-- Lays wrapping text out at the width
+---@param width number
+---@return number # the height of the text with the padding at the width
+function Label:measureContentHeight(width)
+  if self.wraps then
+    if width ~= self.formattedWidth then
+      self:formatAt(width)
+    end
+    self.contentHeight = self.drawable:getHeight() + self.paddingTop + self.paddingBottom
+  end
+  return self.contentHeight
+end
+
+-- Lays wrapping text out again at the label's new width
 function Label:onResize()
-  self:refreshFormatting()
+  local width = self:getCurrentWidth()
+  if width and width ~= self.formattedWidth then
+    self:formatAt(width)
+  end
 end
 
 function Label:refreshLocalization()
@@ -177,15 +280,18 @@ function Label:refreshLocalization()
 end
 
 function Label:drawSelf()
+  local width, height = self.layoutRect.width, self.layoutRect.height
   if self.fillColors then
-    GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height, self.fillColors[1], self.fillColors[2], self.fillColors[3], self.fillColors[4])
+    local fill = self.fillColors
+    GraphicsUtil.drawRectangle("fill", 0, 0, width, height, fill[1], fill[2], fill[3], fill[4])
   end
   if self.strokeColors then
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height, self.strokeColors[1], self.strokeColors[2], self.strokeColors[3], self.strokeColors[4])
+    local stroke = self.strokeColors
+    GraphicsUtil.drawRectangle("line", 0, 0, width, height, stroke[1], stroke[2], stroke[3], stroke[4])
   end
-  
-  local textX = self.x + self.paddingLeft
-  local textY = self.y + self.paddingTop
+
+  local textX = self.paddingLeft
+  local textY = self.paddingTop
   if self.textColor then
     GraphicsUtil.setColor(self.textColor[1], self.textColor[2], self.textColor[3], self.textColor[4])
     GraphicsUtil.draw(self.drawable, math.round(textX), math.round(textY))

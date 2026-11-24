@@ -1,6 +1,7 @@
 local ConnectionWarning = require("client.src.ui.ConnectionWarning")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local UiElement = require("client.src.ui.UIElement")
+local Layout = require("client.src.ui.Layout")
 
 ---@type table<PublicPlayerID, PingSummary>
 local pings = {}
@@ -12,16 +13,23 @@ end
 local FINE = {current = 40, average = 38, jitter = 3}
 local SLOW = {current = 1500, average = 1400, jitter = 40}
 
--- A warning whose card starts at x 100, y 100, watching Ann (1) and Ben (2) unless other players are given
+-- A warning watching Ann (1) and Ben (2) unless other players are given
 ---@param players ConnectionWarningPlayer[]?
 ---@return ConnectionWarning
 local function warningFor(players)
   return ConnectionWarning({
-    x = 100,
-    y = 100,
     players = players or {{publicId = 1, name = "Ann"}, {publicId = 2, name = "Ben"}},
     pingOf = pingOf,
   })
+end
+
+-- A warning as warningFor makes it, laid out at its size so its names fit its width
+---@param players ConnectionWarningPlayer[]?
+---@return ConnectionWarning
+local function laidOutWarningFor(players)
+  local warning = warningFor(players)
+  warning:layOut()
+  return warning
 end
 
 local function testNoWarningWhileEveryConnectionIsFast()
@@ -109,9 +117,11 @@ local function testTheCardIsTwoGridCellsWideAndOneTallUnlessItFills()
   local warning = warningFor()
 
   warning:refresh()
+  warning:layOut()
 
-  assert(warning.width == ConnectionWarning.WIDTH and warning.height == ConnectionWarning.HEIGHT,
-    "the card should be " .. ConnectionWarning.WIDTH .. "x" .. ConnectionWarning.HEIGHT .. ", not " .. warning.width .. "x" .. warning.height)
+  local rect = warning.layoutRect
+  assert(rect.width == ConnectionWarning.WIDTH and rect.height == ConnectionWarning.HEIGHT,
+    "the card should be " .. ConnectionWarning.WIDTH .. "x" .. ConnectionWarning.HEIGHT .. ", not " .. rect.width .. "x" .. rect.height)
   assert(ConnectionWarning.WIDTH == 184 and ConnectionWarning.HEIGHT == 84, "the card should match a 2x1 element of the room's 100 unit grid with 8 margins")
 end
 
@@ -119,13 +129,16 @@ testTheCardIsTwoGridCellsWideAndOneTallUnlessItFills()
 
 local function testAFillingCardTakesTheSizeOfWhatItIsIn()
   pings = {[1] = FINE, [2] = SLOW}
-  local cell = UiElement({x = 100, y = 100, width = 200, height = 90})
-  local warning = ConnectionWarning({players = {{publicId = 1, name = "Ann"}, {publicId = 2, name = "Ben"}}, pingOf = pingOf, hFill = true, vFill = true})
+  local cell = UiElement({layoutRules = {sizing = Layout.fixedSize(200, 90)}})
+  local warning = ConnectionWarning({players = {{publicId = 1, name = "Ann"}, {publicId = 2, name = "Ben"}}, pingOf = pingOf,
+                                     layoutRules = {sizing = {horizontal = Layout.GROW, vertical = Layout.GROW}}})
   cell:addChild(warning)
 
   warning:refresh()
+  cell:layOut()
 
-  assert(warning.width == 200 and warning.height == 90, "the card should fill its 200x90 cell, not " .. warning.width .. "x" .. warning.height)
+  local rect = warning.layoutRect
+  assert(rect.width == 200 and rect.height == 90, "the card should fill its 200x90 cell, not " .. rect.width .. "x" .. rect.height)
 end
 
 testAFillingCardTakesTheSizeOfWhatItIsIn()
@@ -133,7 +146,7 @@ testAFillingCardTakesTheSizeOfWhatItIsIn()
 local function testEachPlayersRowHoldsTheirAveragePing()
   pings = {[1] = {current = 900, average = 700, jitter = 90}, [2] = FINE}
 
-  local rows = warningFor():buildRows()
+  local rows = laidOutWarningFor():buildRows()
 
   assert(#rows == 2, "expected a row per player, got " .. #rows)
   assert(rows[1].name == "Ann" and rows[1].ping == "700 ms", "Ann's row should read Ann, 700 ms, got " .. tostring(rows[1].name) .. ", " .. tostring(rows[1].ping))
@@ -147,7 +160,7 @@ local function testATwelveCharacterNameBesideASlowPingFitsWholeInJapanese()
   GAME:setLanguage("JP")
   pings = {[1] = SLOW}
 
-  local warning = warningFor({{publicId = 1, name = "JpGuestName1"}})
+  local warning = laidOutWarningFor({{publicId = 1, name = "JpGuestName1"}})
   local row = warning:buildRows()[1]
   local fullWidth = GraphicsUtil.getGlobalFontWithSize(GraphicsUtil.fontSize - 1):getWidth("JpGuestName1")
 
@@ -161,7 +174,7 @@ testATwelveCharacterNameBesideASlowPingFitsWholeInJapanese()
 local function testAnUnmeasuredPlayersPingIsBlank()
   pings = {}
 
-  local row = warningFor({{publicId = 1, name = "Ann"}}):buildRows()[1]
+  local row = laidOutWarningFor({{publicId = 1, name = "Ann"}}):buildRows()[1]
 
   assert(row.name == "Ann" and row.ping == "", "Ann's row should hold her name and no ping yet, got '" .. tostring(row.ping) .. "'")
 end
@@ -191,7 +204,7 @@ testASlowPlayersPingIsTheWarningsYellow()
 
 local function testALongNameIsShortenedToLeaveRoomForThePing()
   pings = {[1] = SLOW}
-  local warning = warningFor({{publicId = 1, name = "WWWWWWWWWWWWWWWW"}})
+  local warning = laidOutWarningFor({{publicId = 1, name = "WWWWWWWWWWWWWWWW"}})
 
   local row = warning:buildRows()[1]
 
@@ -207,13 +220,13 @@ local function testTheWarningRowSitsBelowThePlayersAndInsideTheCard()
   local warning = warningFor()
 
   warning:refresh()
+  warning:layOut()
 
   local layout = warning:layout()
   assert(layout.warningTop >= layout.rowTops[#layout.rowTops] + layout.rowHeight, "the warning should sit below the last player's row")
-  assert(layout.warningTop + layout.warningHeight <= warning.height, "the warning row should end inside the card, at "
-    .. layout.warningTop + layout.warningHeight .. " of " .. warning.height)
-  local _, iconY = warning.icon:getScreenPos()
-  assert(iconY - 100 >= layout.warningTop, "the icon should be in the warning row")
+  assert(layout.warningTop + layout.warningHeight <= warning.layoutRect.height, "the warning row should end inside the card, at "
+    .. layout.warningTop + layout.warningHeight .. " of " .. warning.layoutRect.height)
+  assert(warning.icon.layoutRect.y >= layout.warningTop, "the icon should be in the warning row")
 end
 
 testTheWarningRowSitsBelowThePlayersAndInsideTheCard()
@@ -258,7 +271,7 @@ testAWarningOnlyCardIsHiddenWhileEveryConnectionIsFine()
 
 local function testAnAlwaysShownCardShowsThePingsWithoutTheIconWhileConnectionsAreFine()
   pings = {[1] = FINE, [2] = FINE}
-  local warning = ConnectionWarning({x = 100, y = 100, players = {{publicId = 1, name = "Ann"}}, pingOf = pingOf, alwaysShown = true})
+  local warning = ConnectionWarning({players = {{publicId = 1, name = "Ann"}}, pingOf = pingOf, alwaysShown = true})
 
   warning:refresh()
 

@@ -11,7 +11,7 @@ end,
 UiElement)
 
 function ValueLabel:drawSelf()
-  love.graphics.print(self.valueFunction(), self.x, self.y)
+  love.graphics.print(self.valueFunction(), 0, 0)
 end
 
 return ValueLabel

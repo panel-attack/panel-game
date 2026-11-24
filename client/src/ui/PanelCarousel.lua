@@ -3,17 +3,25 @@ local Carousel = require(PATH .. ".Carousel")
 local class = require("common.lib.class")
 local StackPanel = require(PATH .. ".StackPanel")
 local ImageContainer = require(PATH .. ".ImageContainer")
+local Layout = require(PATH .. ".Layout")
 
 local PanelCarousel = class(function(carousel, options)
   carousel.colorCount = 5
 end, Carousel)
 
 function PanelCarousel:createPassenger(id)
-  local stackPanel = StackPanel({alignment = "left", height = 20, hAlign = "center", vAlign = "center"})
+  local stackPanel = StackPanel({
+    alignment = "left",
+    layoutRules = {sizing = {vertical = Layout.fixed(20)}, floating = Layout.floatAt("centerCenter")}
+  })
   local panelImages = {}
   -- outlineColor
   for color = 1, #panels[id].displayIcons do
-    panelImages[color] = ImageContainer({image = panels[id].displayIcons[color], vAlign = "center", drawBorders = false, width = 20, height = 20})
+    panelImages[color] = ImageContainer({
+      image = panels[id].displayIcons[color],
+      drawBorders = false,
+      layoutRules = {sizing = Layout.fixedSize(20, 20)}
+    })
   end
 
   for i = 1, self.colorCount do

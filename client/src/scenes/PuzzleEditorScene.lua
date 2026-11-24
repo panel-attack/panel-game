@@ -8,6 +8,15 @@ local TouchInputDetector = require("client.src.TouchInputDetector")
 local GameBase = require("client.src.scenes.GameBase")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local PuzzleEditorStackOverlay = require("client.src.ui.PuzzleEditorStackOverlay")
+local Layout = require("client.src.ui.Layout")
+
+-- Places a palette button at its offset from the palette's top left
+---@param button UiElement
+---@param x number
+---@param y number
+local function placePaletteButton(button, x, y)
+  button:setLayoutRule("floating", Layout.floatAt("leftTop", x, y))
+end
 
 ---@class PuzzleEditorScene : GameBase
 ---@field puzzleSet PuzzleSet
@@ -74,27 +83,25 @@ function PuzzleEditorScene:customLoad()
 end
 
 function PuzzleEditorScene:createUI()
+  -- the editor panel sits 20 down, the game view panel beside it is empty
   self.rootPanel = ui.StackPanel({
     alignment = "left",
-    hAlign = "center",
-    vAlign = "center",
-    width = consts.CANVAS_WIDTH,
-    height = consts.CANVAS_HEIGHT
+    layoutRules = {
+      sizing = {vertical = Layout.fixed(consts.CANVAS_HEIGHT)},
+      padding = {top = 20},
+      floating = Layout.floatAt("centerCenter")
+    }
   })
 
   self.gameViewPanel = ui.UiElement({
-    width = consts.CANVAS_WIDTH - 320,
-    height = consts.CANVAS_HEIGHT
+    layoutRules = {sizing = Layout.fixedSize(consts.CANVAS_WIDTH - 320, consts.CANVAS_HEIGHT)}
   })
 
   self.puzzleGrid = self:createPuzzleGrid()
 
   self.editorPanel = ui.StackPanel({
     alignment = "top",
-    width = 300,
-    height = consts.CANVAS_HEIGHT,
-    x = 20,
-    y = 20
+    layoutRules = {sizing = {horizontal = Layout.fixed(300)}}
   })
 
   local controls = self:createEditorControls()
@@ -118,10 +125,10 @@ function PuzzleEditorScene:createPuzzleGrid()
 
   -- Create single overlay for all touch interactions and drawing
   local stackOverlay = PuzzleEditorStackOverlay({
-    x = scaledOriginX,
-    y = scaledOriginY,
-    width = stack.engine.width * panelSize,
-    height = stack.engine.height * panelSize,
+    layoutRules = {
+      sizing = Layout.fixedSize(stack.engine.width * panelSize, stack.engine.height * panelSize),
+      floating = Layout.floatAt("leftTop", scaledOriginX, scaledOriginY)
+    },
     stack = stack,
     puzzleEditor = self
   })
@@ -139,8 +146,7 @@ function PuzzleEditorScene:createPaletteButtons()
   table.insert(colors, 9)     -- colorless
 
   local palettePanel = ui.UiElement({
-    width = 280,
-    height = 300
+    layoutRules = {sizing = Layout.fixedSize(280, 300)}
   })
 
   self.paletteButtons = {}
@@ -158,8 +164,7 @@ function PuzzleEditorScene:createPaletteButtons()
     local y = row * (buttonSize + spacing)
 
     local button = self:createPanelButtonSmall(color, buttonSize)
-    button.x = x
-    button.y = y
+    placePaletteButton(button, x, y)
 
     if i == 1 then
       button.backgroundColor = {.5, .5, 1, .7}
@@ -178,8 +183,7 @@ function PuzzleEditorScene:createPaletteButtons()
   local y = row * (buttonSize + spacing)
 
   local cursorButton = self:createCursorButton(buttonSize)
-  cursorButton.x = x
-  cursorButton.y = y
+  placePaletteButton(cursorButton, x, y)
 
   self.paletteButtons[cursorIndex] = {button = cursorButton, color = "cursor"}
   palettePanel:addChild(cursorButton)
@@ -193,8 +197,7 @@ function PuzzleEditorScene:createPaletteButtons()
   y = row * (buttonSize + spacing)
 
   local garbageButton = self:createGarbageButton(buttonSize)
-  garbageButton.x = x
-  garbageButton.y = y
+  placePaletteButton(garbageButton, x, y)
 
   self.paletteButtons[garbageIndex] = {button = garbageButton, color = "garbage"}
   palettePanel:addChild(garbageButton)
@@ -208,8 +211,7 @@ function PuzzleEditorScene:createPaletteButtons()
   y = row * (buttonSize + spacing)
 
   local shockGarbageButton = self:createShockGarbageButton(buttonSize)
-  shockGarbageButton.x = x
-  shockGarbageButton.y = y
+  placePaletteButton(shockGarbageButton, x, y)
 
   self.paletteButtons[shockGarbageIndex] = {button = shockGarbageButton, color = "shock_garbage"}
   palettePanel:addChild(shockGarbageButton)
@@ -233,12 +235,14 @@ end
 function PuzzleEditorScene:createEditorControls()
   local controls = {}
 
-  controls[#controls + 1] = ui.Label({
+  -- the title is centered across the panel
+  local titleRow = ui.UiElement({layoutRules = {sizing = {horizontal = Layout.GROW}, childAlignment = Layout.CENTER_HORIZONTALLY}})
+  titleRow:addChild(ui.Label({
     text = "Panel Editor",
     fontSize = 16,
-    hAlign = "center",
     translate = false
-  })
+  }))
+  controls[#controls + 1] = titleRow
 
   controls[#controls + 1] = ui.Label({
     text = "Panel Type:",
@@ -251,22 +255,19 @@ function PuzzleEditorScene:createEditorControls()
 
   controls[#controls + 1] = ui.TextButton({
     label = ui.Label({text = "Clear Solution"}),
-    width = 100,
-    height = 25,
+    layoutRules = {sizing = Layout.fixedSize(100, 25)},
     onClick = function() self:clearSolution() end
   })
 
   controls[#controls + 1] = ui.TextButton({
     label = ui.Label({text = "Save Puzzle"}),
-    width = 100,
-    height = 25,
+    layoutRules = {sizing = Layout.fixedSize(100, 25)},
     onClick = function() self:savePuzzle() end
   })
 
   controls[#controls + 1] = ui.TextButton({
     label = ui.Label({text = "Exit Editor"}),
-    width = 100,
-    height = 25,
+    layoutRules = {sizing = Layout.fixedSize(100, 25)},
     onClick = function() self:exitEditor() end
   })
 
@@ -293,8 +294,7 @@ function PuzzleEditorScene:createPanelButtonSmall(color, size)
         fontSize = size > 50 and 12 or 8,
         translate = false
       }),
-      width = size,
-      height = size,
+      layoutRules = {sizing = Layout.fixedSize(size, size)},
       onClick = function()
         self.selectedPanelType = color
         self.cursorMode = false
@@ -311,8 +311,7 @@ function PuzzleEditorScene:createPanelButtonSmall(color, size)
 
     return ui.ImageButton({
       image = panelsData.greyPanel,
-      width = size,
-      height = size,
+      layoutRules = {sizing = Layout.fixedSize(size, size)},
       onClick = function()
         self.selectedPanelType = color
         self.cursorMode = false
@@ -330,8 +329,7 @@ function PuzzleEditorScene:createPanelButtonSmall(color, size)
 
     return ui.ImageButton({
       image = panelImage,
-      width = size,
-      height = size,
+      layoutRules = {sizing = Layout.fixedSize(size, size)},
       onClick = function()
         self.selectedPanelType = color
         self.cursorMode = false
@@ -349,8 +347,7 @@ function PuzzleEditorScene:createCursorButton(size)
 
   return ui.ImageButton({
     image = cursorImage,
-    width = size,
-    height = size,
+    layoutRules = {sizing = Layout.fixedSize(size, size)},
     onClick = function()
       self.cursorMode = true
       self.garbageMode = false
@@ -367,8 +364,7 @@ function PuzzleEditorScene:createGarbageButton(size)
 
   return ui.ImageButton({
     image = garbageImage,
-    width = size,
-    height = size,
+    layoutRules = {sizing = Layout.fixedSize(size, size)},
     onClick = function()
       self.garbageMode = true
       self.shockGarbageMode = false
@@ -416,8 +412,7 @@ function PuzzleEditorScene:createShockGarbageButton(size)
 
   return ui.ImageButton({
     image = garbageImage,
-    width = size,
-    height = size,
+    layoutRules = {sizing = Layout.fixedSize(size, size)},
     onClick = function()
       self.shockGarbageMode = true
       self.garbageMode = false

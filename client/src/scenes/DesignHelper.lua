@@ -1,6 +1,7 @@
 local class = require("common.lib.class")
 local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
+local Layout = require("client.src.ui.Layout")
 local input = require("client.src.inputManager")
 
 local DesignHelper = class(function(self, sceneParams)
@@ -14,9 +15,16 @@ function DesignHelper:load()
   --self:loadPanels()
   --self:loadStages()
   --self.grid:createElementAt(1, 2, 2, 1, "stage", self.stageCarousel)
-  self.rankedSelection = ui.StackPanel({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
-  local trueLabel = ui.Label({text = "ss_ranked", vAlign = "top", hAlign = "center"})
-  local falseLabel = ui.Label({text = "ss_casual", vAlign = "bottom", hAlign = "center"})
+  self.rankedSelection = ui.StackPanel({
+    alignment = "left",
+    layoutRules = {
+      sizing = {vertical = Layout.GROW},
+      childAlignment = Layout.CENTER_VERTICALLY,
+      floating = Layout.floatAt("centerCenter")
+    }
+  })
+  local trueLabel = ui.Label({text = "ss_ranked", layoutRules = {floating = Layout.floatAt("centerTop")}})
+  local falseLabel = ui.Label({text = "ss_casual", layoutRules = {floating = Layout.floatAt("centerBottom")}})
   self.rankedSelection:addChild(trueLabel)
   self.rankedSelection:addChild(falseLabel)
   self.grid:createElementAt(3, 2, 2, 1, "ranked", self.rankedSelection)
@@ -25,7 +33,9 @@ function DesignHelper:load()
 end
 
 function DesignHelper:loadGrid()
-  self.grid = ui.Grid({x = 180, y = 60, unitSize = 108, gridWidth = 9, gridHeight = 6, unitMargin = 6})
+  self.grid = ui.Grid({
+    layoutRules = {floating = Layout.floatAt("leftTop", 180, 60)},
+    unitSize = 108, gridWidth = 9, gridHeight = 6, unitMargin = 6})
   self.uiRoot:addChild(self.grid)
   -- self.cursor = GridCursor({
   --   grid = self.grid,
@@ -41,18 +51,18 @@ function DesignHelper:loadGrid()
 end
 
 function DesignHelper:loadRankedSelection(width)
-  local rankedSelector = ui.BoolSelector({startValue = true, width = width, vAlign = "center", hAlign = "center"})
+  local rankedSelector = ui.BoolSelector({startValue = true})
 
   return rankedSelector
 end
 
 function DesignHelper:loadPanels()
-  self.panelCarousel = ui.PanelCarousel({hAlign = "center", vAlign = "center", hFill = true, vFill = true})
+  self.panelCarousel = ui.PanelCarousel({layoutRules = {sizing = {horizontal = Layout.GROW, vertical = Layout.GROW}}})
   self.panelCarousel:loadPanels()
 end
 
 function DesignHelper:loadStages()
-  self.stageCarousel = ui.StageCarousel({hAlign = "center", vAlign = "center", hFill = true, vFill = true})
+  self.stageCarousel = ui.StageCarousel({layoutRules = {sizing = {horizontal = Layout.GROW, vertical = Layout.GROW}}})
   self.stageCarousel:loadCurrentStages()
 end
 

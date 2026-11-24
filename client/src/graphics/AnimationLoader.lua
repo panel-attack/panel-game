@@ -432,8 +432,6 @@ end
 
 -- DRAWING CODE
 
-local loveMajor = love.getVersion()
-
 -- Shader used for clipping using a stencil pass
 local alphaDiscardShader = love.graphics.newShader([[
     vec4 effect(vec4 tintColor, Image tex, vec2 texCoord, vec2 screenCoord)
@@ -478,7 +476,8 @@ function AnimationLoader.drawDrawables(drawables)
   love.graphics.pop()
 end
 
--- Draws one node and its children, it sets its own colour and resets the blend mode and stencil it changes
+-- Draws one node and its children, it sets its own color and resets the blend mode it changes; a node that uses a stencil is
+-- drawn only where its siblings before it drew, inside any clip already open
 function AnimationLoader.drawNode(d, parent)
     love.graphics.push()
 
@@ -498,18 +497,7 @@ function AnimationLoader.drawNode(d, parent)
 
       if usesStencil then
         assert(parent, "To use a stencil you need siblings")
-        if loveMajor >= 12 then
-          -- unlike love.graphics.stencil on 11, draw mode keeps earlier values, so clear the previous node's mask
-          love.graphics.clear(false, true, false)
-          love.graphics.setStencilMode("draw", 1)
-          drawSiblingsBeforeNode(parent, d)
-          love.graphics.setStencilMode("test", 1)
-        else
-          love.graphics.stencil(function()
-            drawSiblingsBeforeNode(parent, d)
-          end, "replace", 1, false)
-          love.graphics.setStencilTest("equal", 1)
-        end
+        GraphicsUtil.clipStack:pushShape(drawSiblingsBeforeNode, parent, d)
       end
 
       if usesBlendAlphaMode then
@@ -530,11 +518,7 @@ function AnimationLoader.drawNode(d, parent)
       end
 
       if usesStencil then
-        if loveMajor >= 12 then
-          love.graphics.setStencilMode()
-        else
-          love.graphics.setStencilTest()
-        end
+        GraphicsUtil.clipStack:pop()
       end
     end
 

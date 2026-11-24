@@ -1,6 +1,7 @@
 local Scene = require("client.src.scenes.Scene")
 local class = require("common.lib.class")
 local ui = require("client.src.ui")
+local Layout = require("client.src.ui.Layout")
 local CharacterLoader = require("client.src.mods.CharacterLoader")
 local StageLoader = require("client.src.mods.StageLoader")
 local PanelLoader = require("client.src.mods.PanelLoader")
@@ -25,8 +26,7 @@ local SUB_MODS_X = 18
 local EXTRA_WIDTH = 2
 -- deeper rows stop indenting so the name keeps room next to the arrow and icon
 local MAX_INDENT = NAME_WIDTH - 4
--- the tab is centered on the screen, like the menu it replaces
-local PANEL_X = (consts.CANVAS_WIDTH - GRID_WIDTH * UNIT_SIZE) / 2
+-- the tab is centered on the screen, like the menu it replaces, this far from the top
 local PANEL_Y = 16
 -- the column headings sit below the tabs
 local HEADER_Y = 50
@@ -36,7 +36,10 @@ local NAME_GAP = 6
 -- the back button sits centered under the list, inside the panel
 local BACK_WIDTH = 4 * UNIT_SIZE
 local BACK_HEIGHT = UNIT_SIZE - 2 * UNIT_MARGIN
-local BACK_Y = HEADER_Y + UNIT_SIZE + SCROLL_HEIGHT + UNIT_MARGIN
+-- the elements filling a grid cell
+local FILL_CELL = {sizing = {horizontal = Layout.GROW, vertical = Layout.GROW}}
+-- a mod's icon, fitted into its grid cell and centered in it
+local ICON_IN_CELL = {sizing = {horizontal = Layout.GROW, vertical = Layout.GROW}, childAlignment = {x = "center", y = "center"}}
 
 local PICKED_COLOR = {.5, .5, 1, .7}
 local LOCKED_BACKGROUND_COLOR = {.3, .3, .3, .25}
@@ -94,23 +97,30 @@ ModManagement.name = "ModManagement"
 ModManagement.TABS = TABS
 
 function ModManagement:load()
-  self.panel = ui.UiElement({x = PANEL_X, y = PANEL_Y, width = GRID_WIDTH * UNIT_SIZE, height = consts.CANVAS_HEIGHT - PANEL_Y})
-  self.titleLabel = ui.Label({text = "mod_manage_title", y = PANEL_Y, hAlign = "center", fontSize = 16})
+  -- the column headings, the list and the back button stacked down the panel
+  self.panel = ui.UiElement({
+    layoutRules = {
+      sizing = Layout.fixedSize(GRID_WIDTH * UNIT_SIZE, consts.CANVAS_HEIGHT - PANEL_Y),
+      padding = {top = HEADER_Y},
+      layoutDirection = "topToBottom",
+      childAlignment = {x = "center"},
+      floating = Layout.floatAt("centerTop", 0, PANEL_Y),
+    }
+  })
+  self.titleLabel = ui.Label({
+    text = "mod_manage_title",
+    fontSize = 16,
+    layoutRules = {floating = Layout.floatAt("centerTop", 0, PANEL_Y)}
+  })
   self.uiRoot:addChild(self.titleLabel)
   self.headerGrid = self:createHeaderGrid()
   self.panel:addChild(self.headerGrid)
-  self.scrollContainer = ui.ScrollContainer({
-    y = self.headerGrid.y + UNIT_SIZE,
-    width = GRID_WIDTH * UNIT_SIZE,
-    height = SCROLL_HEIGHT,
-  })
+  self.scrollContainer = ui.ScrollContainer({layoutRules = {sizing = Layout.fixedSize(GRID_WIDTH * UNIT_SIZE, SCROLL_HEIGHT)}})
   self.panel:addChild(self.scrollContainer)
+  self.panel:addChild(ui.UiElement({layoutRules = {sizing = Layout.fixedSize(1, UNIT_MARGIN)}}))
   self.backButton = ui.TextButton({
     label = ui.Label({text = "back"}),
-    y = BACK_Y,
-    width = BACK_WIDTH,
-    height = BACK_HEIGHT,
-    hAlign = "center",
+    layoutRules = {sizing = Layout.fixedSize(BACK_WIDTH, BACK_HEIGHT)},
   })
   self.backButton.onClick = function()
     self:pressBackButton()
@@ -157,12 +167,10 @@ function ModManagement:load()
 
   self.menu = ui.Menu({
     menuItems = menuItems,
-    x = 0,
-    y = 0,
-    hAlign = "center",
-    vAlign = "center",
-    width = 200,
-    height = 300,
+    layoutRules = {
+      sizing = {vertical = Layout.fixed(300)},
+      floating = Layout.floatAt("centerCenter"),
+    },
   })
 
   self.uiRoot:addChild(self.menu)
@@ -170,15 +178,16 @@ end
 
 ---@return table grid with the column names
 function ModManagement:createHeaderGrid()
-  local headerGrid = ui.Grid({unitSize = UNIT_SIZE, unitMargin = UNIT_MARGIN, gridWidth = GRID_WIDTH, gridHeight = 1, y = HEADER_Y})
-  local function addHeader(x, width, text, hAlign)
-    headerGrid:createElementAt(x, 1, width, 1, text, ui.Label({text = text, hAlign = hAlign or "center", vAlign = "center"}))
+  local headerGrid = ui.Grid({unitSize = UNIT_SIZE, unitMargin = UNIT_MARGIN, gridWidth = GRID_WIDTH, gridHeight = 1})
+  local function addHeader(x, width, text, point)
+    local label = ui.Label({text = text, layoutRules = {floating = Layout.floatAt(point or "centerCenter")}})
+    headerGrid:createElementAt(x, 1, width, 1, text, label)
   end
-  addHeader(1, NAME_WIDTH, "mod_manage_name", "left")
+  addHeader(1, NAME_WIDTH, "mod_manage_name", "leftCenter")
   addHeader(STATUS_X.off, STATUS_WIDTH * #STATUSES, "mod_manage_status")
   addHeader(UP_X, DOWN_X - UP_X + 1, "mod_manage_order")
-  self.musicHeader = ui.Label({text = "mod_manage_music", hAlign = "center", vAlign = "center"})
-  self.subModsHeader = ui.Label({text = "mod_manage_submods", hAlign = "center", vAlign = "center"})
+  self.musicHeader = ui.Label({text = "mod_manage_music", layoutRules = {floating = Layout.floatAt("centerCenter")}})
+  self.subModsHeader = ui.Label({text = "mod_manage_submods", layoutRules = {floating = Layout.floatAt("centerCenter")}})
   headerGrid:createElementAt(MUSIC_X, 1, EXTRA_WIDTH, 1, "music", self.musicHeader)
   headerGrid:createElementAt(SUB_MODS_X, 1, EXTRA_WIDTH, 1, "subMods", self.subModsHeader)
   return headerGrid
@@ -317,10 +326,7 @@ function ModManagement:addRow(grid, tree, row, y)
     local icon = ui.ImageContainer({
       image = self.tab.getIcon(node.mod),
       drawBorders = true,
-      hFill = true,
-      vFill = true,
-      hAlign = "center",
-      vAlign = "center",
+      layoutRules = ICON_IN_CELL,
       color = status == "off" and OFF_COLOR or nil,
     })
     grid:createElementAt(x, y, 1, 1, "icon", icon)
@@ -342,7 +348,7 @@ end
 ---@return ArrowButton
 function ModManagement:createExpandButton(node)
   local collapsedKeys = self.collapsedKeys[self.tab]
-  local button = ui.ArrowButton({direction = collapsedKeys[node.key] and "right" or "down", hFill = true, vFill = true})
+  local button = ui.ArrowButton({direction = collapsedKeys[node.key] and "right" or "down", layoutRules = FILL_CELL})
   local function toggle()
     GAME.theme:playValidationSfx()
     collapsedKeys[node.key] = not collapsedKeys[node.key] or nil
@@ -381,15 +387,22 @@ end
 function ModManagement:createNameLabel(row, status)
   local node = row.node
   local textColor = status == "off" and OFF_COLOR or nil
-  local name = ui.UiElement({hFill = true, vFill = true})
+  -- the name and the gray text after it in a row down the middle of the cell
+  local name = ui.UiElement({
+    layoutRules = {
+      sizing = {horizontal = Layout.GROW, vertical = Layout.GROW},
+      childAlignment = {y = "center"},
+      childGap = NAME_GAP,
+    }
+  })
   local nameLabel
   if node.mod then
     local modName = node.mod.display_name or node.mod.name or node.mod.id
-    nameLabel = ui.Label({text = modName, translate = false, vAlign = "center", textColor = textColor})
+    nameLabel = ui.Label({text = modName, translate = false, textColor = textColor})
   elseif node.key == ModFolderTree.BUILTIN then
-    nameLabel = ui.Label({text = "mod_manage_builtin", vAlign = "center", textColor = textColor})
+    nameLabel = ui.Label({text = "mod_manage_builtin", textColor = textColor})
   else
-    nameLabel = ui.Label({text = node.name, translate = false, vAlign = "center", textColor = textColor})
+    nameLabel = ui.Label({text = node.name, translate = false, textColor = textColor})
   end
   name:addChild(nameLabel)
 
@@ -397,16 +410,12 @@ function ModManagement:createNameLabel(row, status)
     name:addChild(ui.Label({
       text = getLinkedFolderText(node.parent),
       translate = false,
-      x = nameLabel.width + NAME_GAP,
-      vAlign = "center",
       textColor = textColor or COUNT_COLOR,
     }))
   elseif row.modCount > 0 then
     name:addChild(ui.Label({
       text = ModManagement.getModCountLocalizationKey(row.modCount),
       replacements = {tostring(row.modCount)},
-      x = nameLabel.width + NAME_GAP,
-      vAlign = "center",
       textColor = textColor or COUNT_COLOR,
     }))
   end
@@ -418,7 +427,7 @@ end
 ---@param onPress function
 ---@return TextButton
 local function createTextButton(text, onPress)
-  local button = ui.TextButton({label = ui.Label({text = text}), hFill = true, vFill = true})
+  local button = ui.TextButton({label = ui.Label({text = text}), layoutRules = FILL_CELL})
   button.onClick = onPress
   button.onSelect = onPress
   return button
@@ -456,7 +465,7 @@ end
 function ModManagement:addOrderButtons(grid, row, y)
   local node = row.node
   local function addMoveButton(x, direction, offset)
-    local button = ui.ArrowButton({direction = direction, hFill = true, vFill = true})
+    local button = ui.ArrowButton({direction = direction, layoutRules = FILL_CELL})
     local function move()
       self:onMoveButtonPressed(node, offset)
     end
@@ -487,8 +496,12 @@ function ModManagement:addMusicAndSubModColumns(grid, mod, status, y)
   end
   local textColor = status == "off" and OFF_COLOR or nil
   local hasMusic = tostring(mod.hasMusic):upper()
-  local music = ui.Label({text = hasMusic, translate = false, hAlign = "center", vAlign = "center", textColor = textColor})
-  local subMods = ui.Label({text = tostring(subModCount), translate = false, hAlign = "center", vAlign = "center", textColor = textColor})
+  local music = ui.Label({
+    text = hasMusic, translate = false, textColor = textColor, layoutRules = {floating = Layout.floatAt("centerCenter")}
+  })
+  local subMods = ui.Label({
+    text = tostring(subModCount), translate = false, textColor = textColor, layoutRules = {floating = Layout.floatAt("centerCenter")}
+  })
   grid:createElementAt(MUSIC_X, y, EXTRA_WIDTH, 1, "music", music)
   grid:createElementAt(SUB_MODS_X, y, EXTRA_WIDTH, 1, "subMods", subMods)
 end

@@ -1,6 +1,7 @@
 local class = require("common.lib.class")
 local UiElement = require("client.src.ui.UIElement")
 local Label = require("client.src.ui.Label")
+local Layout = require("client.src.ui.Layout")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
 local ENTER_SECONDS = 0.45
@@ -29,6 +30,7 @@ local RIM_COLOR = {0, 0.404, 0.424}
 ---@field label Label
 ---@field holdSeconds number how long the notification stays in place
 ---@field slideOffset number pixels the notification is drawn right of its place, 0 while it holds
+---@field pendingSlide {group: table, delay: number, margin: number}? the slide start asked for, run once a layout has sized the card
 ---@field finished boolean true once it has left
 ---@overload fun(options: NotificationOptions): Notification
 local Notification = class(
@@ -37,17 +39,19 @@ local Notification = class(
   function(self, options)
     self.holdSeconds = options.holdSeconds or HOLD_SECONDS
     self.slideOffset = 0
+    self.pendingSlide = nil
     self.finished = false
+    -- the card fits its label, centered inside its padding, and is never narrower than MIN_WIDTH
+    self:setLayoutRule("sizing", {horizontal = Layout.fit(MIN_WIDTH)})
+    self:setLayoutRule("padding", {left = PADDING_X, right = PADDING_X, top = PADDING_Y, bottom = PADDING_Y})
+    self:setLayoutRule("childAlignment", Layout.CENTER)
     self.label = Label({
       text = options.text,
       translate = options.translate,
       replacements = options.replacements,
-      hAlign = "center",
-      vAlign = "center",
       textColor = {1, 1, 1, 1}
     })
     self:addChild(self.label)
-    self:fitToLabel()
   end,
   UiElement
 )
@@ -57,31 +61,35 @@ Notification.HOLD_SECONDS = HOLD_SECONDS
 Notification.LEAVE_SECONDS = LEAVE_SECONDS
 Notification.MIN_WIDTH = MIN_WIDTH
 
--- Sizes the card around its label
-function Notification:fitToLabel()
-  self.width = math.max(MIN_WIDTH, self.label.width + PADDING_X * 2)
-  self.height = self.label.height + PADDING_Y * 2
-end
-
--- Changes the notification's text and resizes its card to fit
+-- Changes the notification's text; its card fits the new text at the next layout
 ---@param text string the raw text or localization key
 ---@param replacements string[]? strings to put into the localized text's placeholders
 function Notification:setText(text, replacements)
   self.label:setText(text, replacements)
-  self:fitToLabel()
 end
 
--- Slides the notification in from out of sight after delay seconds, holds it and slides it back out
+-- Slides the notification in from out of sight after delay seconds, holds it and slides it back out.
+-- How far it slides depends on its width, so the slide starts once the next layout has sized the card, before it is drawn.
 ---@param group table the flux group that runs the notification's animation
 ---@param delay number seconds to wait before sliding in
----@param distance number pixels right of its place at which the notification is out of sight
-function Notification:start(group, delay, distance)
-  self.slideOffset = distance
-  group:to(self, ENTER_SECONDS, {slideOffset = 0}):delay(delay):ease("backout")
-    :after(LEAVE_SECONDS, {slideOffset = distance}):delay(self.holdSeconds):ease("quadin")
-    :oncomplete(function()
-      self.finished = true
-    end)
+---@param margin number pixels between the notification's right edge and the edge it slides out past
+function Notification:start(group, delay, margin)
+  self.pendingSlide = {group = group, delay = delay, margin = margin}
+end
+
+-- Starts the slide asked for by start, out of sight right of its place by its width and the margin
+function Notification:onResize()
+  local slide = self.pendingSlide
+  if slide then
+    self.pendingSlide = nil
+    local distance = self.layoutRect.width + slide.margin
+    self.slideOffset = distance
+    slide.group:to(self, ENTER_SECONDS, {slideOffset = 0}):delay(slide.delay):ease("backout")
+      :after(LEAVE_SECONDS, {slideOffset = distance}):delay(self.holdSeconds):ease("quadin")
+      :oncomplete(function()
+        self.finished = true
+      end)
+  end
 end
 
 -- Draws the notification moved right by how far it still has to slide in or has slid out
@@ -94,7 +102,7 @@ end
 
 -- Draws the card behind the label
 function Notification:drawSelf()
-  local x, y, width, height = self.x, self.y, self.width, self.height
+  local x, y, width, height = 0, 0, self.layoutRect.width, self.layoutRect.height
   local inset = RIM_WIDTH / 2
   GraphicsUtil.drawRectangle("fill", x, y + SHADOW_OFFSET, width, height, 0, 0, 0, 0.35, CORNER_RADIUS, CORNER_RADIUS)
   GraphicsUtil.drawRectangle("fill", x, y, width, height, CARD_COLOR[1], CARD_COLOR[2], CARD_COLOR[3], 1, CORNER_RADIUS, CORNER_RADIUS)

@@ -1,17 +1,17 @@
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local DebugSettings = require("client.src.debug.DebugSettings")
+local LayoutSolver = require("client.src.ui.LayoutSolver")
+local Layout = require("client.src.ui.Layout")
 local logger = require("common.lib.logger")
 
+-- the keys of Clay's element declaration, the only rules an element has
+local LAYOUT_RULE_KEYS = {
+  id = true, sizing = true, padding = true, childGap = true, childAlignment = true, layoutDirection = true, clip = true,
+  floating = true,
+}
+
 ---@class UiElement
----@field x number relative x offset to the parent element (canvas if no parent)
----@field y number relative y offset to the parent element (canvas if no parent)
----@field width number width of the element for the sake of resizing children and touch hitboxes
----@field height number height of the element for the sake of resizing children and touch hitboxes
----@field hAlign ("left" | "center" | "right") determines the horizontal alignment relative to the parent
----@field vAlign ("top" | "center" | "bottom") determines the vertical alignment relative to the parent
----@field hFill boolean if the element's width should fill out the entire parent's width
----@field vFill boolean if the element's height should fill out the entire parent's height
 ---@field isVisible boolean if the element is currently visible for rendering (also disables touch interaction)
 ---@field isEnabled boolean if the element is currently eligible for touch interaction
 ---@field parent UiElement the element's parent it is getting position relative to via its properties
@@ -26,48 +26,37 @@ local logger = require("common.lib.logger")
 ---@field focusCallbacks table<InputSource, function?> per input source, what to run when the focused child gives its focus back
 ---@field focusedBy table<InputSource, true> the input sources that currently have this element focused
 ---@field yielded table<InputSource, true> the input sources this element has given focus back for, until the focusing parent takes it
+---@field layoutRect LayoutRect where the last layout placed the element, x and y measured from the parent, and the only size it has
+---@field layoutState table the layout solver's working data
+---@field layoutDirty boolean true from a change to the element or a child until its tree is next laid out
+---@field isBeingLaidOut boolean? true on a root while the layout solver runs on its tree
+---@field resizePending boolean true from the element being added until a layout runs its onResize
+---@field layoutRules LayoutRules the element's LayoutRules: how it is sized and placed and how it places its children.
+--- It is in its parent's flow unless the rules say it floats. The table and the tables in it are never changed, so
+--- many elements can share them; setLayoutRule replaces the table with a changed copy.
 ---@field [any] any
 
 ---@class UiElementOptions
----@field x number? relative x offset to the parent element (canvas if no parent)
----@field y number? relative y offset to the parent element (canvas if no parent)
----@field width number? width of the element for the sake of resizing children and touch hitboxes
----@field height number? height of the element for the sake of resizing children and touch hitboxes
----@field hAlign ("left" | "center" | "right")? determines the horizontal alignment relative to the parent
----@field vAlign ("top" | "center" | "bottom")? determines the vertical alignment relative to the parent
----@field hFill boolean? if the element's width should fill out the entire parent's width
----@field vFill boolean? if the element's height should fill out the entire parent's height
 ---@field isVisible boolean? if the element is currently visible for rendering (also disables touch interaction)
 ---@field isEnabled boolean? if the element is currently eligible for touch interaction
+---@field layoutRules LayoutRules? the element's own LayoutRules: how it is sized and placed and how it places its children
 
 local uniqueId = 0
 
--- base class for all UI elements
--- takes in a options table for setting default values
--- all valid base options are defined in the constructor
+-- The base class of every UI element. An element's place and size come only from the layout solver (see LayoutSolver):
+-- code reads them from layoutRect, the last layout's result, and never computes or writes them itself.
+-- An element sits in its parent's flow unless its rules make it float; only what overlaps others or sits outside the
+-- flow should float.
+-- Whatever owns a tree's root, like Game, a scene or a transition, lays the root out once a frame between the update and
+-- the draw, and only a tree that changed since is solved again. Change rules or children in response to an event (input,
+-- a data change, a new screen), never every frame, and never during a layout or a draw.
+-- Drawing reads state and never changes it; an animation moves what is drawn rather than the layout, and starts once a
+-- layout has given it any size it depends on.
 ---@class UiElement
 ---@overload fun(options: UiElementOptions): UiElement
 local UIElement = class(
   ---@param self UiElement
   function(self, options)
-    -- local position relative to parent (or global pos if parent is nil)
-    self.x = options.x or 0
-    self.y = options.y or 0
-
-    -- ui dimensions
-    self.width = options.width or 0
-    self.height = options.height or 0
-
-    -- how to align the element inside the parent element
-    self.hAlign = options.hAlign or "left"
-    self.vAlign = options.vAlign or "top"
-
-    -- how the size is determined relative to the parent element
-    -- hFill true sets the width to the size of the parent
-    self.hFill = options.hFill or false
-    -- vFill true sets the height to the size of the parent
-    self.vFill = options.vFill or false
-
     -- whether the ui element is visible
     self.isVisible = options.isVisible or options.isVisible == nil and true
     -- whether the ui element recieves events
@@ -86,39 +75,131 @@ local UIElement = class(
 
     self.id = uniqueId
     uniqueId = uniqueId + 1
+
+    self.layoutRules = options.layoutRules or {}
+    for key in pairs(self.layoutRules) do
+      assert(LAYOUT_RULE_KEYS[key], "no layout rule is called " .. tostring(key))
+    end
+    self.layoutRect = {x = 0, y = 0, width = 0, height = 0}
+    self.layoutState = {}
+    self.resizePending = false
+    self:markLayoutDirty()
   end
 )
 
 UIElement.TYPE = "UIElement"
 
+-- Notes that the element's tree needs laying out again, from the element up to its root
+function UIElement:markLayoutDirty()
+  assert(not self:getRoot().isBeingLaidOut, "the layout changed while it was being laid out")
+  local element = self
+  while element and not element.layoutDirty do
+    element.layoutDirty = true
+    element = element.parent
+  end
+end
+
+-- Adds the child after the element's other children, in its flow unless its rules say it floats
+---@param uiElement UiElement
 function UIElement:addChild(uiElement)
   if uiElement.parent ~= self then
     self.children[#self.children + 1] = uiElement
     uiElement.parent = self
-    uiElement:resize()
+    uiElement.resizePending = true
+    uiElement.layoutDirty = false
+    uiElement:markLayoutDirty()
   end
 end
 
-function UIElement:resize()
-  if self.hFill and self.parent then
-    self.width = self.parent.width
-  end
-
-  if self.vFill and self.parent then
-    self.height = self.parent.height
-  end
-
-  self:onResize()
-
-  if self.hFill or self.vFill then
-    for _, child in ipairs(self.children) do
-      child:resize()
+-- Moves a child to the index in the children, which is its place in the flow
+---@param uiElement UiElement
+---@param index integer
+function UIElement:moveChild(uiElement, index)
+  for i, child in ipairs(self.children) do
+    if child == uiElement then
+      table.remove(self.children, i)
+      break
     end
+  end
+  table.insert(self.children, index, uiElement)
+  self:markLayoutDirty()
+end
+
+-- Sets one of the element's LayoutRules, by its key in Clay's element declaration, when the value is a different one.
+-- The element's rules table is never changed: it is replaced by a copy with the rule set, so the elements sharing the
+-- old table, like the ones a layout file's rules were given to, keep theirs. The value is kept, never changed, too.
+---@param key string
+---@param value any
+function UIElement:setLayoutRule(key, value)
+  assert(LAYOUT_RULE_KEYS[key], "no layout rule is called " .. tostring(key))
+  if self.layoutRules[key] ~= value then
+    local rules = shallowcpy(self.layoutRules)
+    rules[key] = value
+    self.layoutRules = rules
+    self:markLayoutDirty()
+  end
+end
+
+---@param sizing LayoutSizing?
+---@param size number
+---@return boolean # whether the sizing fixes the size along its axis
+local function isFixedAt(sizing, size)
+  return sizing ~= nil and sizing.type == "fixed" and sizing.min == size and sizing.max == size
+end
+
+-- Gives the element a fixed size, leaving its rules as they are when they already fix it at that size
+---@param width number
+---@param height number
+function UIElement:setFixedSize(width, height)
+  local sizing = self.layoutRules.sizing
+  if not sizing or not isFixedAt(sizing.horizontal, width) or not isFixedAt(sizing.vertical, height) then
+    self:setLayoutRule("sizing", Layout.fixedSize(width, height))
   end
 end
 
 -- overridable function to define extra behaviour to the element itself on resize
 function UIElement:onResize()
+end
+
+-- Called by the layout solver with the element's final size; runs onResize when the element was added or its size changed
+---@param width number
+---@param height number
+function UIElement:onLayoutSized(width, height)
+  if self.resizePending or width ~= self.sizedWidth or height ~= self.sizedHeight then
+    self.sizedWidth, self.sizedHeight = width, height
+    self.resizePending = false
+    self:onResize()
+  end
+end
+
+---@return UiElement # the element at the top of this element's tree
+function UIElement:getRoot()
+  local root = self
+  while root.parent do
+    root = root.parent
+  end
+  return root
+end
+
+-- Clears the dirty marks of the element's tree
+---@param element UiElement
+local function markLaidOut(element)
+  element.layoutDirty = false
+  for _, child in ipairs(element.children) do
+    markLaidOut(child)
+  end
+end
+
+-- Lays out the tree under this root if anything in it changed since its last layout
+function UIElement:layOut()
+  assert(not self.parent, "only the root of a tree is laid out")
+  assert(not self.isBeingLaidOut, "a layout of the tree started while it was being laid out")
+  if self.layoutDirty then
+    self.isBeingLaidOut = true
+    LayoutSolver.solve(self)
+    self.isBeingLaidOut = false
+    markLaidOut(self)
+  end
 end
 
 function UIElement:detach()
@@ -127,7 +208,10 @@ function UIElement:detach()
       if child.id == self.id then
         table.remove(self.parent.children, i)
         self:onDetach()
+        self.parent:markLayoutDirty()
         self.parent = nil
+        -- not drawn on its own, so laid out only when added again or asked to
+        self.layoutDirty = true
         break
       end
     end
@@ -138,15 +222,18 @@ end
 function UIElement:onDetach()
 end
 
+-- The element's position on screen, from the layout rects of the element and its parents
+---@return number x
+---@return number y
 function UIElement:getScreenPos()
   local x, y = 0, 0
-  local xOffset, yOffset = 0, 0
-  if self.parent then
-    x, y = self.parent:getScreenPos()
-    xOffset, yOffset = GraphicsUtil.getAlignmentOffset(self.parent, self)
+  local element = self
+  while element do
+    x = x + element.layoutRect.x
+    y = y + element.layoutRect.y
+    element = element.parent
   end
-
-  return x + self.x + xOffset, y + self.y + yOffset
+  return x, y
 end
 
 -- passes a retranslation request through the tree to reach all Labels
@@ -174,39 +261,53 @@ function UIElement:updateChildren(dt)
   end
 end
 
+-- Outlines the element while element borders are shown
 function UIElement:drawDebugOutline()
   if DebugSettings.showUIElementBorders() then
     GraphicsUtil.setColor(0, 0, 1, 1)
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+    GraphicsUtil.drawRectangle("line", 0, 0, self.layoutRect.width, self.layoutRect.height)
     GraphicsUtil.setColor(1, 1, 1, 1)
   end
 end
 
+-- Draws the element and its children moved to its layout rect, which is measured from its parent's
 function UIElement:draw()
   if self.isVisible then
+    local rect = self.layoutRect
+    love.graphics.push("transform")
+    love.graphics.translate(rect.x, rect.y)
     self:drawDebugOutline()
     self:drawSelf()
-    -- if DEBUG_ENABLED then
-    --   GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height, 1, 1, 1, 0.5)
-    -- end
-    love.graphics.push("transform")
-    love.graphics.translate(self.x, self.y)
     self:drawChildren()
     love.graphics.pop()
   end
 end
 
--- UiElements can override this method to do custom drawing
+-- UiElements can override this method to do custom drawing at their layout rect, whose top left is 0, 0
 -- implementation is optional
 function UIElement:drawSelf()
 end
 
+-- Draws the children; an element that clips draws the children in its flow inside its rect, and its floating children on top
 function UIElement:drawChildren()
-  for _, uiElement in ipairs(self.children) do
-    if uiElement.isVisible then
-      GraphicsUtil.applyAlignment(self, uiElement)
+  if self.layoutRules.clip then
+    GraphicsUtil.clipStack:pushRectangle(0, 0, self.layoutRect.width, self.layoutRect.height)
+    self:drawChildrenInFlow(true)
+    GraphicsUtil.clipStack:pop()
+    self:drawChildrenInFlow(false)
+  else
+    for _, uiElement in ipairs(self.children) do
       uiElement:draw()
-      GraphicsUtil.resetAlignment()
+    end
+  end
+end
+
+-- Draws the children that are in the flow, or the ones that float
+---@param inFlow boolean
+function UIElement:drawChildrenInFlow(inFlow)
+  for _, uiElement in ipairs(self.children) do
+    if (uiElement.layoutRules.floating == nil) == inFlow then
+      uiElement:draw()
     end
   end
 end
@@ -231,7 +332,8 @@ end
 
 function UIElement:inBounds(x, y)
   local screenX, screenY = self:getScreenPos()
-  return x > screenX and x < screenX + self.width and y > screenY and y < screenY + self.height
+  local rect = self.layoutRect
+  return x > screenX and x < screenX + rect.width and y > screenY and y < screenY + rect.height
 end
 
 function UIElement:isTouchable()

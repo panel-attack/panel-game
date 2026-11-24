@@ -1,5 +1,6 @@
 local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
+local Layout = require("client.src.ui.Layout")
 local class = require("common.lib.class")
 local tableUtils = require("common.lib.tableUtils")
 local CharacterSelectVsSelf = require("client.src.scenes.CharacterSelectVsSelf")
@@ -70,8 +71,7 @@ function TrainingMenu:load(sceneParams)
     table.insert(garbagePatternLabels, ui.Label({
         text = garbagepatternName,
         translate = tableUtils.contains(translatableGarbagePatternNames, garbagepatternName),
-        width = 70,
-        height = 25}))
+        layoutRules = {sizing = Layout.fixedSize(70, 25)}}))
   end
 
   local garbagePatternStepper = ui.Stepper({

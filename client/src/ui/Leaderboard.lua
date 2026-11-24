@@ -55,9 +55,8 @@ function Leaderboard:updateData(leaderboardData)
     self.lastVisibleIndex = math.min(self.firstVisibleIndex + self.visibleEntries, #leaderboardData)
   end
   self.data = leaderboardData
+  -- the leaderboard fits its label
   self:refreshView()
-  self.height = self.label.height
-  self.width = self.label.width
 end
 
 function Leaderboard:refreshView()

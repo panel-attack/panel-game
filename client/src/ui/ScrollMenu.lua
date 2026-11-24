@@ -13,8 +13,8 @@ local ScrollMenu = class(
 function(self, options)
   self.selectedIndex = nil
   self.scrollOrientation = "vertical"
-  self.childGap = options.childGap or 8
-  self.padding = options.padding or 32
+  self:setLayoutRule("childGap", options.childGap or 8)
+  self:setLayoutRule("padding", {top = options.padding or 32})
 end,
 ScrollContainer)
 
@@ -45,7 +45,7 @@ function ScrollMenu:selectPrevious()
       break
     end
   end
-  self:keepVisible(-child.y, child.height)
+  self:keepChildVisible(child)
   GAME.theme:playMoveSfx()
 end
 
@@ -63,14 +63,14 @@ function ScrollMenu:selectNext()
       break
     end
   end
-  self:keepVisible(-child.y, child.height)
+  self:keepChildVisible(child)
   GAME.theme:playMoveSfx()
 end
 
 function ScrollMenu:selectLast()
   self.selectedIndex = self:getLastIndex()
   local child = self.children[self.selectedIndex]
-  self:keepVisible(-child.y, child.height)
+  self:keepChildVisible(child)
 end
 
 function ScrollMenu:getLastIndex()
@@ -88,7 +88,7 @@ function ScrollMenu:select(uiElement)
   for i, child in ipairs(self.children) do
     if child == uiElement and child:handlesInputs() and child.isEnabled and child.isVisible then
       self.selectedIndex = i
-      self:keepVisible(-child.y, child.height)
+      self:keepChildVisible(child)
       return true
     end
   end
@@ -130,30 +130,18 @@ function ScrollMenu:receiveInputsSelf(inputSource, dt)
   end
 end
 
----@param uiElement UiElement
-function ScrollMenu:addChild(uiElement)
-  local lastChild = self.children[#self.children]
-  local y
-  if lastChild then
-    y = lastChild.y + lastChild.height + self.childGap
-  else
-    y = self.padding
-  end
-  uiElement.y = y
-  ScrollContainer.addChild(self, uiElement)
-end
-
+-- Draws a highlight behind the selected child, clipped to the menu like the children
 function ScrollMenu:drawChildren()
-  for i, uiElement in ipairs(self.children) do
-    if uiElement.isVisible then
-      if self.selectedIndex and i == self.selectedIndex then
-        GraphicsUtil.setColor(0.6, 0.6, 1, 0.5)
-        love.graphics.rectangle("fill", uiElement.x, uiElement.y, uiElement.width, uiElement.height)
-        love.graphics.rectangle("line", uiElement.x, uiElement.y, uiElement.width, uiElement.height)
-      end
-      uiElement:draw()
-    end
+  local selected = self.selectedIndex and self.children[self.selectedIndex]
+  if selected and selected.isVisible then
+    local rect = selected.layoutRect
+    GraphicsUtil.clipStack:pushRectangle(0, 0, self.layoutRect.width, self.layoutRect.height)
+    GraphicsUtil.setColor(0.6, 0.6, 1, 0.5)
+    love.graphics.rectangle("fill", rect.x, rect.y, rect.width, rect.height)
+    love.graphics.rectangle("line", rect.x, rect.y, rect.width, rect.height)
+    GraphicsUtil.clipStack:pop()
   end
+  ScrollContainer.drawChildren(self)
 end
 
 return ScrollMenu

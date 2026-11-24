@@ -5,6 +5,7 @@ local fileUtils = require("client.src.FileUtils")
 local levelPresets = require("common.data.LevelPresets")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local ImageContainer = require("client.src.ui.ImageContainer")
+local Layout = require("client.src.ui.Layout")
 local Music = require("client.src.music.Music")
 local tableUtils = require("common.lib.tableUtils")
 local SoundController = require("client.src.music.SoundController")
@@ -479,20 +480,14 @@ function Theme:loadIngameGraphics()
   if bgOverlay then
     self.images.bg_overlay = ImageContainer({
       image = bgOverlay,
-      hAlign = "center",
-      vAlign = "center",
-      width = consts.CANVAS_WIDTH,
-      height = consts.CANVAS_HEIGHT
+      layoutRules = {sizing = Layout.fixedSize(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)}
     })
   end
 
   if fgOverlay then
     self.images.fg_overlay = ImageContainer({
       image = fgOverlay,
-      hAlign = "center",
-      vAlign = "center",
-      width = consts.CANVAS_WIDTH,
-      height = consts.CANVAS_HEIGHT
+      layoutRules = {sizing = Layout.fixedSize(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)}
     })
   end
 

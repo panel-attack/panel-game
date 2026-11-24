@@ -25,9 +25,10 @@ ArrowButton.TYPE = "ArrowButton"
 
 function ArrowButton:drawSelf()
   Button.drawSelf(self)
-  local halfSize = math.min(self.width, self.height) / 5
-  local centerX = self.x + self.width / 2
-  local centerY = self.y + self.height / 2
+  local rect = self.layoutRect
+  local halfSize = math.min(rect.width, rect.height) / 5
+  local centerX = rect.width / 2
+  local centerY = rect.height / 2
   local corners = CORNERS[self.direction]
   love.graphics.polygon("fill",
     centerX + corners[1] * halfSize, centerY + corners[2] * halfSize,

@@ -2,6 +2,7 @@ local PATH = (...):gsub('%.[^%.]+$', '')
 local UIElement = require(PATH .. ".UIElement")
 local TextButton = require(PATH .. ".TextButton")
 local Label = require(PATH .. ".Label")
+local Layout = require(PATH .. ".Layout")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
@@ -9,6 +10,14 @@ local DebugSettings = require("client.src.debug.DebugSettings")
 
 local NAV_BUTTON_WIDTH = 25
 local EMPTY_STEPPER_WIDTH = 160
+
+-- The label's size along the axis: the size its rules fix, or its text's measure when they don't fix one
+---@param label Label
+---@param axis "horizontal"|"vertical"
+---@return number
+local function labelLength(label, axis)
+  return Layout.fixedLength(label.layoutRules, axis) or (axis == "horizontal" and label.contentWidth or label.contentHeight)
+end
 
 local function setLabels(self, labels, values, selectedIndex)
   self.selectedIndex = selectedIndex
@@ -20,15 +29,15 @@ local function setLabels(self, labels, values, selectedIndex)
   if (#labels == 0) then
     self.rightButton:setVisibility(false);
     self.leftButton:setVisibility(false);
-    self.width = EMPTY_STEPPER_WIDTH
+    self.stepperWidth = EMPTY_STEPPER_WIDTH
+    self:setFixedSize(self.stepperWidth, self.stepperHeight)
     return
   end
 
   for _, label in ipairs(labels) do
-      label.hAlign = "center"
-      label.vAlign = "center"
-      self.width = math.max(label.width + 10 + NAV_BUTTON_WIDTH * 2, self.width)
-      self.height = math.max(label.height + 4, self.height)
+      label:setLayoutRule("floating", Layout.floatAt("centerCenter"))
+      self.stepperWidth = math.max(labelLength(label, "horizontal") + 10 + NAV_BUTTON_WIDTH * 2, self.stepperWidth)
+      self.stepperHeight = math.max(labelLength(label, "vertical") + 4, self.stepperHeight)
 
       self:addChild(label)
       label:setVisibility(false)
@@ -36,7 +45,7 @@ local function setLabels(self, labels, values, selectedIndex)
 
   self.labels[self.selectedIndex]:setVisibility(true)
   self.value = self.values[self.selectedIndex]
-  self.rightButton.x = self.width - NAV_BUTTON_WIDTH
+  self:setFixedSize(self.stepperWidth, self.stepperHeight)
   self.rightButton:setVisibility(true);
   self.leftButton:setVisibility(true);
 end
@@ -59,19 +68,20 @@ local Stepper = class(
   function(self, options)
     self.onChange = options.onChange or function() end
     self.selectedIndex = options.selectedIndex or 1
+    -- the stepper grows to fit its widest and tallest labels, from the size it was given
+    self.stepperWidth = Layout.fixedLength(self.layoutRules, "horizontal") or 0
+    self.stepperHeight = Layout.fixedLength(self.layoutRules, "vertical") or 0
 
     local navButtonWidth = 25
     self.leftButton = TextButton({
-      width = navButtonWidth,
-      vAlign = "center",
+      layoutRules = {sizing = {horizontal = Layout.fixed(navButtonWidth)}, floating = Layout.floatAt("leftCenter")},
       label = Label({text = "<", translate = false}),
       onClick = function(selfElement, inputSource, holdTime)
         setState(self, self.selectedIndex - 1)
       end
     })
     self.rightButton = TextButton({
-      width = navButtonWidth,
-      vAlign = "center",
+      layoutRules = {sizing = {horizontal = Layout.fixed(navButtonWidth)}, floating = Layout.floatAt("rightCenter")},
       label = Label({text = ">", translate = false}),
       onClick = function(selfElement, inputSource, holdTime)
         setState(self, self.selectedIndex + 1)
@@ -114,9 +124,9 @@ end
 function Stepper:drawSelf()
   if DebugSettings.showUIElementBorders() then
     GraphicsUtil.setColor(self.color)
-    GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height)
+    GraphicsUtil.drawRectangle("fill", 0, 0, self.layoutRect.width, self.layoutRect.height)
     GraphicsUtil.setColor(self.borderColor)
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+    GraphicsUtil.drawRectangle("line", 0, 0, self.layoutRect.width, self.layoutRect.height)
     GraphicsUtil.setColor(1, 1, 1, 1)
   end
 end

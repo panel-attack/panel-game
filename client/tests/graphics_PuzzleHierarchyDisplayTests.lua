@@ -14,9 +14,7 @@ function PuzzleHierarchyDisplayTests.testClassExists()
   
   local display = PuzzleHierarchyDisplay({
     puzzleSet = puzzleSet,
-    puzzleSetIndices = {1},
-    width = 200,
-    height = 100
+    puzzleSetIndices = {1}
   })
   assert(display ~= nil, "PuzzleHierarchyDisplay should be instantiable")
   assert(display.puzzleSet == puzzleSet, "Should store puzzle set")
@@ -35,9 +33,7 @@ function PuzzleHierarchyDisplayTests.testHierarchyDisplay()
   -- Test display for puzzle in child set
   local display = PuzzleHierarchyDisplay({
     puzzleSet = parentSet,
-    puzzleSetIndices = {1, 1},
-    width = 200,
-    height = 100
+    puzzleSetIndices = {1, 1}
   })
   
   -- Test that the display can be drawn without errors
@@ -60,9 +56,7 @@ function PuzzleHierarchyDisplayTests.testUpdateMethodUpdatesDisplay()
   
   local display = PuzzleHierarchyDisplay({
     puzzleSet = parentSet,
-    puzzleSetIndices = {1},
-    width = 200,
-    height = 100
+    puzzleSetIndices = {1}
   })
   
   -- The display should have an update method to refresh when indices change
@@ -85,9 +79,7 @@ function PuzzleHierarchyDisplayTests.testUsesLocalizedNames()
   
   local display = PuzzleHierarchyDisplay({
     puzzleSet = parentSet,
-    puzzleSetIndices = {1, 1},
-    width = 200,
-    height = 100
+    puzzleSetIndices = {1, 1}
   })
   
   -- The display should use localizedSetName when available

@@ -27,8 +27,7 @@ local BoolSelector = class(function(self, options)
   self.onValueChange = options.onValueChange or function() end
 
   -- Calculate initial dimensions
-  self.width = self:calculateWidth()
-  self.height = self:calculateHeight()
+  self:setFixedSize(self:calculateWidth(), self:calculateHeight())
 end,
 UiElement)
 
@@ -102,14 +101,14 @@ end
 function BoolSelector:drawSelf()
   if DebugSettings.showUIElementBorders() then
     GraphicsUtil.setColor(0, 0, 1, 1)
-    GraphicsUtil.drawRectangle("line", self.x + 1, self.y + 1, self.width - 2, self.height - 2)
+    GraphicsUtil.drawRectangle("line", 1, 1, self.layoutRect.width - 2, self.layoutRect.height - 2)
     GraphicsUtil.setColor(1, 1, 1, 1)
   end
 
-  local drawX = self.x + self.widthPadding
-  local drawY = self.y + self.lengthPadding
-  local drawWidth = self.width - 2 * self.widthPadding
-  local drawHeight = self.height - 2 * self.lengthPadding
+  local drawX = self.widthPadding
+  local drawY = self.lengthPadding
+  local drawWidth = self.layoutRect.width - 2 * self.widthPadding
+  local drawHeight = self.layoutRect.height - 2 * self.lengthPadding
 
   local circleX = self.circleRadius
   local circleY = self.circleRadius

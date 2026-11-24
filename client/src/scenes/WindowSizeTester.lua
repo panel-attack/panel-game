@@ -1,6 +1,7 @@
 local Scene = require("client.src.scenes.Scene")
 local class = require("common.lib.class")
 local ui = require("client.src.ui")
+local Layout = require("client.src.ui.Layout")
 local tableUtils = require("common.lib.tableUtils")
 
 local WindowSizeTester = class(function(self, params)
@@ -32,8 +33,7 @@ function WindowSizeTester:load()
     unitSize = 40,
     gridWidth = 22,
     gridHeight = 10,
-    hAlign = "center",
-    vAlign = "center",
+    layoutRules = {floating = Layout.floatAt("centerCenter")},
   })
 
   local dWidth, dHeight = love.window.getDesktopDimensions(config.display)
@@ -43,8 +43,8 @@ function WindowSizeTester:load()
   local maximizedLabel = ui.ValueLabel({valueFunction = function() return "Maximized: " .. tostring(love.window.isMaximized()) end})
   self.uiRoot.fullscreenSelection = ui.ButtonGroup({
     buttons = {
-      ui.TextButton({width = 60, label = ui.Label({text = "op_off"})}),
-      ui.TextButton({width = 60, label = ui.Label({text = "op_on"})})
+      ui.TextButton({layoutRules = {sizing = {horizontal = Layout.fixed(60)}}, label = ui.Label({text = "op_off"})}),
+      ui.TextButton({layoutRules = {sizing = {horizontal = Layout.fixed(60)}}, label = ui.Label({text = "op_on"})})
     },
     values = {false, true},
     selectedIndex = flags.fullscreen and 2 or 1,

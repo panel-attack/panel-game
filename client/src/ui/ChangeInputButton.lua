@@ -1,10 +1,14 @@
 local PATH = (...):gsub('%.[^%.]+$', '')
 local Button = require(PATH .. ".Button")
 local Label = require(PATH .. ".Label")
+local Layout = require(PATH .. ".Layout")
 local class = require("common.lib.class")
 local InputPromptRenderer = require("client.src.graphics.InputPromptRenderer")
 local StackPanel = require(PATH .. ".StackPanel")
 local UiElement = require(PATH .. ".UIElement")
+
+-- the player's icon is drawn this far down in its row
+local PLAYER_ICON_Y = 2
 
 ---@class ChangeInputButtonOptions : ButtonOptions
 ---@field players Player[]
@@ -39,17 +43,17 @@ local ChangeInputButton = class(
     self.titleLabel = Label({
       -- fontSize = 8,
       wrapWidth = width,
+      textAlign = "center",
       text = "change_input_device",
     })
-    self.titleLabel.hAlign = "center"
 
+    -- the title and the players' rows centered across the container, which is centered in the button
     self.iconContainer = StackPanel({
       alignment = "top",
-      hAlign = "center",
-      vAlign = "center",
-      width = width
+      layoutRules = {sizing = {horizontal = Layout.fixed(width)}, childAlignment = Layout.CENTER_HORIZONTALLY},
     })
 
+    self:setLayoutRule("childAlignment", Layout.CENTER)
     self:addChild(self.iconContainer)
 
     -- Subscribe to player signals and update initial state
@@ -107,10 +111,7 @@ function ChangeInputButton:updateSummary()
 
   self.iconContainer:addElement(self.titleLabel)
 
-  local spacer = UiElement({
-    width = 1,
-    height = 4
-  })
+  local spacer = UiElement({layoutRules = {sizing = Layout.fixedSize(1, 4)}})
   self.iconContainer:addElement(spacer)
       
   -- Create a row for each player
@@ -119,10 +120,7 @@ function ChangeInputButton:updateSummary()
 
     -- Add spacing between player rows (except after last)
     if i < #self.localHumanPlayers then
-      spacer = UiElement({
-        width = 1,
-        height = 4
-      })
+      spacer = UiElement({layoutRules = {sizing = Layout.fixedSize(1, 4)}})
       self.iconContainer:addElement(spacer)
     end
   end
@@ -138,8 +136,7 @@ function ChangeInputButton:addPlayerRow(player, playerIndex)
   -- Create horizontal StackPanel for this player's row
   local playerRow = StackPanel({
     alignment = "left",
-    height = iconSize,
-    hAlign = "center"
+    layoutRules = {sizing = {vertical = Layout.fixed(iconSize)}},
   })
 
   self:addPlayerIcons(playerRow, player, playerIndex)
@@ -152,18 +149,13 @@ end
 function ChangeInputButton:addPlayerIcons(playerRow, player, playerIndex)
 
   -- Add player number icon (P1, P2, etc.)
-  local playerIcon = UiElement({
-    x = 0,
-    y = 2,
-    width = iconSize,
-    height = iconSize
-  })
+  local playerIcon = UiElement({layoutRules = {sizing = Layout.fixedSize(iconSize, iconSize)}})
   playerIcon.drawSelf = function(elementSelf)
     if GAME.theme then
       local playerNumberIcon = GAME.theme:getPlayerNumberIcon(playerIndex)
       if playerNumberIcon then
         local scale = iconSize / math.max(playerNumberIcon:getWidth(), playerNumberIcon:getHeight())
-        love.graphics.draw(playerNumberIcon, elementSelf.x, elementSelf.y, 0, scale, scale)
+        love.graphics.draw(playerNumberIcon, 0, PLAYER_ICON_Y, 0, scale, scale)
       end
     end
   end
@@ -172,22 +164,16 @@ function ChangeInputButton:addPlayerIcons(playerRow, player, playerIndex)
   -- Add device type icon and index
   if player.inputConfiguration then
     -- Small spacing between player icon and device icon
-    local smallSpacer = UiElement({
-      width = 4,
-      height = iconSize
-    })
+    local smallSpacer = UiElement({layoutRules = {sizing = Layout.fixedSize(4, iconSize)}})
     playerRow:addElement(smallSpacer)
 
     -- Device icon
-    local deviceIcon = UiElement({
-      width = iconSize,
-      height = iconSize
-    })
+    local deviceIcon = UiElement({layoutRules = {sizing = Layout.fixedSize(iconSize, iconSize)}})
     deviceIcon.drawSelf = function(elementSelf)
       InputPromptRenderer.renderIconWithNumber(
         player.inputConfiguration.deviceType,
-        elementSelf.x + iconSize/2,
-        elementSelf.y + iconSize/2,
+        iconSize/2,
+        iconSize/2,
         iconSize,
         1,
         player.inputConfiguration.controllerImageVariant,

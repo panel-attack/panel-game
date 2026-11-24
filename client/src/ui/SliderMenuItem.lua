@@ -10,8 +10,6 @@ local SliderMenuItem = class(function(self, options)
   self.TYPE = "SliderMenuItem"
   self.labelText = options and options.labelText or nil
   self.slider = options and options.slider or nil
-  self.x = 0
-  self.y = 0
 end, MenuItem)
 
 --- Creates a SliderMenuItem with label and slider
@@ -27,22 +25,20 @@ function SliderMenuItem.create(options)
 
   -- Create label (left side)
   local label = Label({
-    text = options.labelText,
-    vAlign = "center"
+    text = options.labelText
   })
 
   -- Position slider (right side)
   local slider = options.slider
-  slider.x = label.width + SPACE_BETWEEN
-  slider.vAlign = "center"
 
   -- Store references
   menuItem.label = label
   menuItem.slider = slider
 
-  -- Calculate dimensions
-  menuItem.width = label.width + SPACE_BETWEEN + slider.width + MenuItem.PADDING
-  menuItem.height = math.max(label.height, slider.height) + (2 * MenuItem.PADDING)
+  -- the label and the slider in a row, centered on each other
+  menuItem:setLayoutRule("childGap", SPACE_BETWEEN)
+  menuItem:setLayoutRule("padding", {right = MenuItem.PADDING, top = MenuItem.PADDING, bottom = MenuItem.PADDING})
+  menuItem:setLayoutRule("childAlignment", {y = "center"})
 
   -- Add children
   menuItem:addChild(label)
@@ -63,11 +59,10 @@ function SliderMenuItem:drawSelf()
       local fillOpacity = (math.cos(6 * love.timer.getTime()) + 1) / 16 + baseOpacity + selectedAdditionalOpacity
       local borderOpacity = (math.cos(6 * love.timer.getTime()) + 1) / 4 + baseOpacity + selectedAdditionalOpacity
 
-      -- Convert slider-relative coordinates to absolute screen coordinates
-      -- Account for vAlign/hAlign offsets that are applied during child drawing
-      local alignOffsetX, alignOffsetY = GraphicsUtil.getAlignmentOffset(self, self.slider)
-      local absoluteX = self.x + self.slider.x + alignOffsetX + rect.x
-      local absoluteY = self.y + self.slider.y + alignOffsetY + rect.y
+      -- Convert slider-relative coordinates to this item's drawing coordinates
+      local sliderRect = self.slider.layoutRect
+      local absoluteX = sliderRect.x + rect.x
+      local absoluteY = sliderRect.y + rect.y
 
       -- Draw pulsing background fill
       local bgColor = GAME.theme.colors.menuSelectedBackgroundColor

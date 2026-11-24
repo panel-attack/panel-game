@@ -1,5 +1,6 @@
 local class = require("common.lib.class")
 local Transition = require("client.src.scenes.Transitions.Transition")
+local Layout = require("client.src.ui.Layout")
 local Label = require("client.src.ui.Label")
 local input = require("client.src.inputManager")
 
@@ -11,7 +12,9 @@ function(transition, startTime, duration, message, translate)
     translate = true
   end
   transition.message = message
-  transition.label = Label({text = message, translate = translate, hAlign = "center", vAlign = "center"})
+  transition.label = Label({text = message, translate = translate})
+  -- the message is centered on the screen
+  transition.uiRoot:setLayoutRule("childAlignment", Layout.CENTER)
   transition.uiRoot:addChild(transition.label)
 end, Transition)
 

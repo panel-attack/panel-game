@@ -1,5 +1,7 @@
 local PATH = (...):gsub('%.[^%.]+$', '')
+local UiElement = require(PATH .. ".UIElement")
 local Label = require(PATH .. ".Label")
+local Layout = require(PATH .. ".Layout")
 local StackPanel = require(PATH .. ".StackPanel")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
@@ -18,14 +20,12 @@ StackPanel)
 
 function MultiPlayerSelectionWrapper:addElement(uiElement, player)
   self.wrappedElements[player] = uiElement
-  self:applyStackPanelSettings(uiElement)
-  self:addChild(uiElement)
-  self:resize()
+  StackPanel.addElement(self, uiElement)
 end
 
 function MultiPlayerSelectionWrapper:insertElementAtIndex(uiElement, index, player)
   self:addElement(uiElement, player)
-  self:shiftTo(index)
+  self:moveChild(uiElement, index)
 end
 
 ---Passes focus on to the element of the player the input source belongs to
@@ -33,6 +33,9 @@ end
 function MultiPlayerSelectionWrapper:onFocus(inputSource)
   self:forwardFocus(self.wrappedElements[inputSource.player], inputSource)
 end
+
+-- the title centered across the wrapper above the elements it stacks in a column
+local TITLE_ROW_RULES = {sizing = {horizontal = Layout.GROW}, childAlignment = Layout.CENTER_HORIZONTALLY}
 
 local COLORS = {
   border = {1.0, 0.8, 0.1, 0.4}, -- Bright gold border  
@@ -42,21 +45,20 @@ function MultiPlayerSelectionWrapper:drawSelf()
   if self:hasFocus() then
     love.graphics.setLineWidth(6)
     GraphicsUtil.setColor(COLORS.border)
-    love.graphics.rectangle("line", self.x, self.y, self.width, self.height)
+    love.graphics.rectangle("line", 0, 0, self.layoutRect.width, self.layoutRect.height)
     GraphicsUtil.setColor(COLORS.white)
     love.graphics.setLineWidth(1)
   end
 end
 
 function MultiPlayerSelectionWrapper:setTitle(string)
-  self.title = Label({text = string})
-  if self.alignment == "top" or self.alignment == "bottom" then
-    self.title.hAlign = "center"
-    self.title.vAlign = self.alignment
-    StackPanel.insertElementAtIndex(self, self.title, 1)
+  if self.alignment == "top" then
+    self.title = Label({text = string})
+    local titleRow = UiElement({layoutRules = TITLE_ROW_RULES})
+    titleRow:addChild(self.title)
+    StackPanel.insertElementAtIndex(self, titleRow, 1)
   else
-    self.title.hAlign = "center"
-    self.title.vAlign = "top"
+    self.title = Label({text = string, layoutRules = {floating = Layout.floatAt("centerTop")}})
     self:addChild(self.title)
   end
 end

@@ -25,8 +25,7 @@ function StackElement:setStack(stack)
   self.stack = stack
   if self.stack then
     self.stack.gfxScale = self.scale
-    self.width = self.stack.baseWidth * self.scale
-    self.height = self.stack.baseHeight * self.scale
+    self:setFixedSize(self.stack.baseWidth * self.scale, self.stack.baseHeight * self.scale)
     self:refreshPosition()
   end
 end
@@ -45,11 +44,12 @@ function StackElement:setScale(scale)
   end
 end
 
+-- Draws the stack and its effects at the element's layout rect, telling the stack its screen position
 function StackElement:draw()
   if self.stack then
     local x, y = self:getScreenPos()
     love.graphics.push("transform")
-    love.graphics.translate(self.x, self.y)
+    love.graphics.translate(self.layoutRect.x, self.layoutRect.y)
     self.stack:render(false, x, y)
     self.stack:renderEffects()
     love.graphics.pop()

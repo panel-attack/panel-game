@@ -1,5 +1,6 @@
 local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
+local Layout = require("client.src.ui.Layout")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local consts = require("common.engine.consts")
@@ -17,71 +18,59 @@ local DiscordCommunitySetup = class(function(self, sceneParams)
   -- Create a centered vertical stack panel for all content
   local contentStack = ui.StackPanel({
     alignment = "top",
-    width = consts.CANVAS_WIDTH,
-    hAlign = "center",
-    vAlign = "center"
+    layoutRules = {
+      sizing = {horizontal = Layout.fixed(consts.CANVAS_WIDTH)},
+      childAlignment = {x = "center"},
+      floating = Layout.floatAt("centerCenter")
+    }
   })
   
   -- Title
   local titleLabel = ui.Label({
     fontSize = titleFontSize,
-    text = "discord_welcome_title",
-    hAlign = "center",
-    vAlign = "center"
+    text = "discord_welcome_title"
   })
   contentStack:addElement(titleLabel)
   
   contentStack:addElement(ui.UiElement({
-    width = 1,
-    height = 10
+    layoutRules = {sizing = Layout.fixedSize(1, 10)}
   }))
   
   -- Discord logo
   local discordLogo = ui.ImageContainer({
     image = love.graphics.newImage("client/assets/themes/Panel Attack Modern/discord_logo.png"),
-    width = 160,
-    height = 160,
-    hAlign = "center"
+    layoutRules = {sizing = Layout.fixedSize(160, 160)}
   })
   contentStack:addElement(discordLogo)
   
   contentStack:addElement(ui.UiElement({
-    width = 1,
-    height = 10
+    layoutRules = {sizing = Layout.fixedSize(1, 10)}
   }))
   
   -- Message lines
   local messageLine1 = ui.Label({
     fontSize = bodyFontSize,
-    text = "discord_message_line1",
-    hAlign = "center",
-    vAlign = "center"
+    text = "discord_message_line1"
   })
   contentStack:addElement(messageLine1)
 
   contentStack:addElement(ui.UiElement({
-    width = 1,
-    height = 10
+    layoutRules = {sizing = Layout.fixedSize(1, 10)}
   }))
 
   local messageLine2 = ui.Label({
     fontSize = bodyFontSize,
-    text = "discord_message_line2",
-    hAlign = "center",
-    vAlign = "center"
+    text = "discord_message_line2"
   })
   contentStack:addElement(messageLine2)
   
   contentStack:addElement(ui.UiElement({
-    width = 1,
-    height = 10
+    layoutRules = {sizing = Layout.fixedSize(1, 10)}
   }))
 
   local messageLine3 = ui.Label({
     fontSize = bodyFontSize,
-    text = "discord_message_line3",
-    hAlign = "center",
-    vAlign = "center"
+    text = "discord_message_line3"
   })
   contentStack:addElement(messageLine3)
 
@@ -98,12 +87,13 @@ local DiscordCommunitySetup = class(function(self, sceneParams)
   end)
   
   contentStack:addElement(ui.UiElement({
-    width = 1,
-    height = 20
+    layoutRules = {sizing = Layout.fixedSize(1, 20)}
   }))
   
   -- Menu buttons
   local menu = ui.Menu.createCenteredMenu({discordLinkButton, continueButton}, 0)
+  -- the menu takes its place in the stack rather than centering itself on the screen
+  menu:setLayoutRule("floating", nil)
   contentStack:addElement(menu)
   self.menu = menu
 

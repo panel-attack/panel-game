@@ -1,5 +1,6 @@
 local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
+local Layout = require("client.src.ui.Layout")
 local save = require("client.src.save")
 local DebugMenu = require("client.src.debug.DebugMenu")
 local consts = require("common.engine.consts")
@@ -27,6 +28,8 @@ end, Scene)
 OptionsMenu.name = "OptionsMenu"
 
 local SCROLL_STEP = 14
+-- On and off buttons are 60 wide, or wider when their text needs it, as TextButton fits its text
+local TOGGLE_BUTTON_RULES = {sizing = {horizontal = Layout.fixed(60)}}
 
 function OptionsMenu:loadScreens()
   local menus = {}
@@ -80,7 +83,8 @@ end
 
 local function createToggleButtonGroup(configField, onChangeFn)
   return ui.ButtonGroup({
-    buttons = {ui.TextButton({width = 60, label = ui.Label({text = "op_off"})}), ui.TextButton({width = 60, label = ui.Label({text = "op_on"})})},
+    buttons = {ui.TextButton({layoutRules = TOGGLE_BUTTON_RULES, label = ui.Label({text = "op_off"})}),
+      ui.TextButton({layoutRules = TOGGLE_BUTTON_RULES, label = ui.Label({text = "op_on"})})},
     values = {false, true},
     selectedIndex = config[configField] and 2 or 1,
     onChange = function(group, value)
@@ -132,8 +136,11 @@ function OptionsMenu:getSystemInfo()
 end
 
 function OptionsMenu:loadInfoScreen(text)
-  local label = ui.Label({text = text, translate = false, vAlign = "top", x = 6, y = 6})
-  local infoScreen = ui.ScrollText({hFill = true, vFill = true, label = label})
+  local label = ui.Label({text = text, translate = false})
+  local infoScreen = ui.ScrollText({
+    label = label,
+    layoutRules = {sizing = {horizontal = Layout.GROW, vertical = Layout.GROW}, padding = {left = 6, top = 6}}
+  })
   infoScreen.onBackCallback = function()
     GAME.theme:playCancelSfx()
     self.backgroundImage = themes[config.theme].images.bg_main
@@ -485,7 +492,7 @@ function OptionsMenu:loadDebugMenu()
     onBack = function()
       self:switchToScreen("baseMenu")
     end,
-    height = themes[config.theme].main_menu_max_height
+    layoutRules = {sizing = {vertical = Layout.fixed(themes[config.theme].main_menu_max_height)}}
   })
   return debugMenu
 end

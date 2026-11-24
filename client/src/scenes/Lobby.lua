@@ -1,5 +1,6 @@
 local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
+local Layout = require("client.src.ui.Layout")
 local class = require("common.lib.class")
 local logger = require("common.lib.logger")
 local util = require("common.lib.util")
@@ -8,18 +9,32 @@ local MessageTransition = require("client.src.scenes.Transitions.MessageTransiti
 local GameModes = require("common.data.GameModes")
 local tableUtils = require("common.lib.tableUtils")
 local InputSource = require("client.src.input.InputSource")
+local GraphicsUtil = require("client.src.graphics.graphics_util")
+
+local LOBBY_MENU_WIDTH = 300
+local LOBBY_MENU_HEIGHT = 540
+-- the gap between a player's button and the line to their challenge menu, and between the line and the menu
+local SUB_MENU_LINE_GAP = 8
+local SUB_MENU_BUTTON_RULES = {sizing = {horizontal = Layout.fixed(120)}}
+
+---@param publicId PublicPlayerID
+---@return string # the layout id of the player's button, which their challenge menu is pinned to
+local function playerButtonId(publicId)
+  return "lobbyPlayer" .. publicId
+end
 
 -- expects a serverIp and serverPort as a param (unless already set in GAME.connected_server_ip & GAME.connected_server_port respectively)
 ---@class LobbyScene : Scene
 ---@field lobbyMenu ScrollMenu
 ---@field lobbyMessage Label
 ---@field playerSubMenuConnectionWarning ConnectionWarning? beside the challenge menu while it is open
+---@field playerSubMenuButton Button? the player's button the open challenge menu is beside
 local Lobby = class(
 function(self, sceneParams)
   self.music = "main"
 
   -- ui
-  self.leaderboard = ui.Leaderboard({isVisible = false, x = 200, hAlign = "center", vAlign = "center"})
+  self.leaderboard = ui.Leaderboard({isVisible = false, layoutRules = {floating = Layout.floatAt("centerCenter", 200)}})
   self.lobbyMessage = ui.Label({text = "lb_select_player"})
   self.backgroundImg = themes[config.theme].images.bg_main
   self.lobbyMenu = nil
@@ -66,23 +81,24 @@ end
 
 function Lobby:initLobbyMenu()
   self.lobbyMenuWidth = 140
+  local buttonRules = {sizing = {horizontal = Layout.fixed(self.lobbyMenuWidth)}}
   self.onePlayerEndlessButton = ui.TextButton({
     label = ui.Label({text = "mm_1_endless"}),
-    width = self.lobbyMenuWidth,
+    layoutRules = buttonRules,
     onClick = function()
       GAME.netClient:requestRoom(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_ENDLESS))
     end
   })
   self.onePlayerTimeAttackButton = ui.TextButton({
     label = ui.Label({text = "mm_1_time"}),
-    width = self.lobbyMenuWidth,
+    layoutRules = buttonRules,
     onClick = function()
       GAME.netClient:requestRoom(GameModes.getPreset(GameModes.IDs.ONE_PLAYER_TIME_ATTACK))
     end
   })
   self.onePlayerVsButton = ui.TextButton({
     label = ui.Label({text = "mm_1_vs"}),
-    width = self.lobbyMenuWidth,
+    layoutRules = buttonRules,
     onClick = function()
       if GAME.localPlayer.settings.style ~= GameModes.Styles.MODERN then
         GAME.localPlayer:setStyle(GameModes.Styles.MODERN)
@@ -94,7 +110,7 @@ function Lobby:initLobbyMenu()
   self.leaderboardToggleLabel = ui.Label({text = "lb_show_board"})
   self.showLeaderboardButton = ui.TextButton({
     label = self.leaderboardToggleLabel,
-    width = self.lobbyMenuWidth,
+    layoutRules = buttonRules,
     onClick = function()
       if self.leaderboard:hasFocus(InputSource.anyPlayer) then
         self.lobbyMenu:unfocusChild(InputSource.anyPlayer)
@@ -105,40 +121,36 @@ function Lobby:initLobbyMenu()
   })
   self.backButton = ui.TextButton({
     label = ui.Label({text = "lb_back"}),
-    width = self.lobbyMenuWidth,
+    layoutRules = buttonRules,
     onClick = exitMenu
   })
 
   self.roomPanel = ui.UiElement({
-    x = 440,
-    hAlign = "center",
-    vAlign = "center",
-    width = 300,
-    height = 540,
+    layoutRules = {sizing = Layout.fixedSize(300, 540), floating = Layout.floatAt("centerCenter", 440)},
     isVisible = false
   })
 
   self.roomInfo = ui.Label({
     text = "",
     translate = false,
-    hAlign = "left",
-    vAlign = "top",
   })
 
   self.roomTimer = ui.Label({
     text = "00:00",
     translate = false,
-    hAlign = "left",
-    vAlign = "top",
-    y = GAME.theme.font.size * 4
+    layoutRules = {floating = Layout.floatAt("leftTop", 0, GAME.theme.font.size * 4)}
   })
 
   self.roomPanel:addChild(self.roomInfo)
   self.roomPanel:addChild(self.roomTimer)
 
   self.lobbyMenuStartingUp = true
-  self.lobbyMenu = ui.ScrollMenu({height = 540, width = 300, hAlign = "center", vAlign = "center"})
-  self.lobbyMenu.x = self.lobbyMenuXoffsetMap[false]
+  self.lobbyMenu = ui.ScrollMenu({
+    layoutRules = {
+      sizing = Layout.fixedSize(LOBBY_MENU_WIDTH, LOBBY_MENU_HEIGHT),
+      floating = Layout.floatAt("centerCenter", self.lobbyMenuXoffsetMap[false])
+    }
+  })
 
   self.uiRoot:addChild(self.lobbyMenu)
   self.uiRoot:addChild(self.roomPanel)
@@ -158,7 +170,7 @@ function Lobby:toggleLeaderboard()
     self.leaderboardToggleLabel:setText("lb_show_board")
   end
   self.leaderboard:setVisibility(not self.leaderboard.isVisible)
-  self.lobbyMenu.x = self.lobbyMenuXoffsetMap[self.leaderboard.isVisible]
+  self.lobbyMenu:setLayoutRule("floating", Layout.floatAt("centerCenter", self.lobbyMenuXoffsetMap[self.leaderboard.isVisible]))
 end
 
 --------------------------------
@@ -237,7 +249,7 @@ function Lobby:createPlayerButtons(personalizedLobbyData)
 
       local button = ui.TextButton({
         label = ui.Label({text = playerName, translate = false}),
-        width = self.lobbyMenuWidth,
+        layoutRules = {id = playerButtonId(publicId), sizing = {horizontal = Layout.fixed(self.lobbyMenuWidth)}},
         onClick =
           function(button)
             self:openPlayerSubMenu(publicId, button)
@@ -290,10 +302,10 @@ function Lobby:createRoomButtons(personalizedLobbyData)
     end
 
     local button = ui.IconTextButton({
-      label = ui.Label({text = roomName, translate = false, wrapWidth = self.lobbyMenu.width - 19}),
+      label = ui.Label({text = roomName, translate = false, wrapWidth = LOBBY_MENU_WIDTH - 19}),
       iconSize = 16,
       icon = icon,
-      width = self.lobbyMenuWidth,
+      layoutRules = {sizing = {horizontal = Layout.fixed(self.lobbyMenuWidth)}},
       onClick = self:requestSpectateFunction(room)
     })
     button.lobbyType = "room"
@@ -317,17 +329,19 @@ function Lobby:openPlayerSubMenu(playerId, button)
 
   local lobbyDataV2 = GAME.netClient.lobbyDataV2
 
-  local x, y = button:getScreenPos()
-
+  -- beside the player's button, following it when the list is rebuilt
   local subMenu = ui.ScrollMenu({
-    x = x + self.lobbyMenu.width + 8,
-    y = y,
-    hAlign = "left",
-    vAlign = "top",
-    height = 88,
-    width = 120,
     padding = 0,
     childGap = 8,
+    layoutRules = {
+      id = "playerSubMenu",
+      sizing = Layout.fixedSize(120, 88),
+      floating = {
+        attachTo = "element",
+        parentId = playerButtonId(playerId),
+        offset = {x = LOBBY_MENU_WIDTH + SUB_MENU_LINE_GAP},
+      },
+    },
   })
 
   subMenu.playerId = playerId
@@ -340,7 +354,7 @@ function Lobby:openPlayerSubMenu(playerId, button)
     acceptImage = GAME.theme:getFightImage(),
     proposeImage = GAME.theme:getCheckboxImage(false),
     withdrawImage = GAME.theme:getCheckboxImage(true),
-    width = 120
+    layoutRules = SUB_MENU_BUTTON_RULES
   })
   
   subMenu:addChild(vsButton)
@@ -353,7 +367,7 @@ function Lobby:openPlayerSubMenu(playerId, button)
     acceptImage = GAME.theme:getFightImage(),
     proposeImage = GAME.theme:getCheckboxImage(false),
     withdrawImage = GAME.theme:getCheckboxImage(true),
-    width = 120
+    layoutRules = SUB_MENU_BUTTON_RULES
   })
   subMenu:addChild(timeAttackButton)
 
@@ -377,7 +391,7 @@ function Lobby:openPlayerSubMenu(playerId, button)
 
   local backButton = ui.TextButton({
     label = ui.Label({text = "back"}),
-    width = 120,
+    layoutRules = SUB_MENU_BUTTON_RULES,
     onClick = function()
       GAME.theme:playCancelSfx()
       self.lobbyMenu:unfocusChild(InputSource.anyPlayer)
@@ -387,21 +401,24 @@ function Lobby:openPlayerSubMenu(playerId, button)
   subMenu:select(vsButton)
   self.playerSubMenu = subMenu
 
-  local subMenuLine = ui.Line({
-    x = x + button.width + 8,
-    y = y + button.height / 2,
-    height = button.height,
-    points = {x + button.width + 8, y + button.height / 2, subMenu.x - 8, y + button.height / 2}
-  })
+  -- lies over the whole scene and draws the line from the button to the menu where the last layout put them
+  local subMenuLine = ui.UiElement({layoutRules = {floating = Layout.floatAt("leftTop")}})
+  -- Intentional override
+  ---@diagnostic disable-next-line: duplicate-set-field
+  subMenuLine.drawSelf = function()
+    self:drawSubMenuLine()
+  end
   self.subMenuLine = subMenuLine
+  self.playerSubMenuButton = button
 
-  self.playerSubMenuConnectionWarning = self:createChallengeConnectionWarning(playerId, subMenu, y)
+  self.playerSubMenuConnectionWarning = self:createChallengeConnectionWarning(playerId)
 
   self.lobbyMenu:focusChild(subMenu, InputSource.anyPlayer, function()
     self.playerSubMenu:detach()
     self.playerSubMenu = nil
     self.subMenuLine:detach()
     self.subMenuLine = nil
+    self.playerSubMenuButton = nil
     self.playerSubMenuConnectionWarning:detach()
     self.playerSubMenuConnectionWarning = nil
   end)
@@ -414,13 +431,17 @@ end
 -- A warning card right of the challenge menu, its top level with the menu's, that shows while your or the challenged
 -- player's connection makes rollback likely
 ---@param playerId PublicPlayerID
----@param subMenu UiElement
----@param y number the screen y of the challenge menu
 ---@return ConnectionWarning
-function Lobby:createChallengeConnectionWarning(playerId, subMenu, y)
+function Lobby:createChallengeConnectionWarning(playerId)
   return ui.ConnectionWarning({
-    x = subMenu.x + subMenu.width + ui.ConnectionWarning.PADDING,
-    y = y,
+    layoutRules = {
+      floating = {
+        attachTo = "element",
+        parentId = "playerSubMenu",
+        attachPoints = {element = "leftTop", parent = "rightTop"},
+        offset = {x = ui.ConnectionWarning.PADDING},
+      },
+    },
     players = {
       {publicId = GAME.localPlayer.publicId, name = GAME.localPlayer.name},
       {publicId = playerId, name = GAME.netClient.lobbyDataV2.players[playerId].name},
@@ -541,13 +562,8 @@ function Lobby:onLobbyStateUpdate(lobbyDataV2)
         end
       end
 
-      local x, y = previousButton:getScreenPos()
-
-      self.subMenuLine.x = x + previousButton.width + 8
-      self.subMenuLine.y = y + previousButton.height / 2
-      self.subMenuLine:setPoints({self.subMenuLine.x, self.subMenuLine.y, self.playerSubMenu.x - 8, self.subMenuLine.y})
-      self.playerSubMenu.y = y
-      self.playerSubMenuConnectionWarning.y = y
+      -- the menu and its warning are pinned to the button's id, so they follow the new button on their own
+      self.playerSubMenuButton = previousButton
     end
   end
 
@@ -557,7 +573,7 @@ end
 ------------------------------
 -- scene core functionality --
 ------------------------------
-local loginStateLabel = ui.Label({text = loc("lb_login"), translate = false, x = 500, y = 350})
+local loginStateLabel = ui.Label({text = loc("lb_login"), translate = false})
 function Lobby:updateSelf(dt)
   self.backgroundImg:update(dt)
 
@@ -636,10 +652,26 @@ function Lobby:draw()
   self.backgroundImg:draw()
   self:drawCommunityMessage()
   if GAME.netClient.state == NetClient.STATES.LOGIN then
+    -- the label is a tree of its own, laid out at the origin
+    love.graphics.push("transform")
+    love.graphics.translate(500, 350)
     loginStateLabel:draw()
+    love.graphics.pop()
   else
     self.uiRoot:draw()
   end
+end
+
+-- Draws the line from the open challenge menu's player button to the menu, at their places in the last layout
+function Lobby:drawSubMenuLine()
+  local button = self.playerSubMenuButton
+  local buttonX, buttonY = button:getScreenPos()
+  local menuX = self.playerSubMenu:getScreenPos()
+  local y = buttonY + button.layoutRect.height / 2
+  love.graphics.setColor(1, 1, 1, 0.6)
+  love.graphics.setLineWidth(2)
+  love.graphics.line(buttonX + button.layoutRect.width + SUB_MENU_LINE_GAP, y, menuX - SUB_MENU_LINE_GAP, y)
+  GraphicsUtil.setColor(1, 1, 1, 1)
 end
 
 function Lobby:onDisconnect(voluntary)

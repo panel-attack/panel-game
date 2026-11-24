@@ -6,6 +6,8 @@ local PuzzleHintHelper = require("client.src.PuzzleHintHelper")
 
 local BACKGROUND_PADDING = 8
 local BACKGROUND_PADDING_VERTICAL = 4
+-- between the help and the button prompt, and again under the prompt
+local LABEL_GAP = 10
 local IDLE_TIME_THRESHOLD = 8.0
 
 local COLORS = {
@@ -57,30 +59,28 @@ local PuzzleHelpDisplay = class(
 PuzzleHelpDisplay.TYPE = "PuzzleHelpDisplay"
 
 
+-- Lays the panel out as a column of the help and, under it, the button prompt
 function PuzzleHelpDisplay:createLabels()
+  self:setLayoutRule("layoutDirection", "topToBottom")
+  self:setLayoutRule("childGap", LABEL_GAP)
+  self:setLayoutRule("padding", {
+    left = BACKGROUND_PADDING,
+    right = BACKGROUND_PADDING,
+    top = BACKGROUND_PADDING_VERTICAL,
+    bottom = BACKGROUND_PADDING_VERTICAL + LABEL_GAP
+  })
+
   self.contentLabel = ui.Label({
-    x = BACKGROUND_PADDING,
-    y = BACKGROUND_PADDING_VERTICAL,
-    width = 0,
-    height = 0,
     text = "",
     fontSize = 14,
     translate = false,
-    hAlign = "left",
-    vAlign = "top",
     wrapWidth = 220
   })
   
   self.buttonLabel = ui.Label({
-    x = BACKGROUND_PADDING,
-    y = BACKGROUND_PADDING_VERTICAL + 80,
-    width = 0,
-    height = 0,
     text = "",
     fontSize = 12,
     translate = false,
-    hAlign = "left",
-    vAlign = "top",
     wrapWidth = 220
   })
   
@@ -172,28 +172,13 @@ function PuzzleHelpDisplay:updateVisibility()
   self.visible = (self.state ~= PuzzleHelpState.HIDDEN) or (self.puzzle.helpDescription ~= nil and self.puzzle.helpDescription ~= "")
 end
 
+-- Takes no space while hidden, and fits its labels while shown
 function PuzzleHelpDisplay:updateDimensions()
-  if not self.visible then
-    self.width = 0
-    self.height = 0
-    return
+  if self.visible then
+    self:setLayoutRule("sizing", nil)
+  else
+    self:setFixedSize(0, 0)
   end
-  
-  -- Calculate width based on the widest content + padding
-  local contentWidth = self.contentLabel.drawable and self.contentLabel.drawable:getWidth() or 0
-  local buttonWidth = self.buttonLabel.drawable and self.buttonLabel.drawable:getWidth() or 0
-  local maxWidth = math.max(contentWidth, buttonWidth)
-  
-  -- Calculate height based on both labels + spacing + padding
-  local contentHeight = self.contentLabel.drawable and self.contentLabel.drawable:getHeight() or 0
-  local buttonHeight = self.buttonLabel.drawable and self.buttonLabel.drawable:getHeight() or 0
-  local totalHeight = contentHeight + buttonHeight + 20
-  
-  self.width = maxWidth + (BACKGROUND_PADDING * 2)
-  self.height = totalHeight + (BACKGROUND_PADDING_VERTICAL * 2)
-  
-  -- Update button label position
-  self.buttonLabel.y = BACKGROUND_PADDING_VERTICAL + contentHeight + 10
 end
 
 function PuzzleHelpDisplay:drawSelf()
@@ -202,10 +187,10 @@ function PuzzleHelpDisplay:drawSelf()
   end
   
   GraphicsUtil.setColor(COLORS.background)
-  love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+  love.graphics.rectangle("fill", 0, 0, self.layoutRect.width, self.layoutRect.height)
 
   GraphicsUtil.setColor(COLORS.border)
-  love.graphics.rectangle("line", self.x, self.y, self.width, self.height)
+  love.graphics.rectangle("line", 0, 0, self.layoutRect.width, self.layoutRect.height)
   
   GraphicsUtil.setColor(COLORS.white)
 end

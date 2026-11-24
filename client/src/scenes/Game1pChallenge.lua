@@ -4,12 +4,17 @@ local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local ChallengeModeTimeSplitsUIElement = require("client.src.graphics.ChallengeModeTimeSplitsUIElement")
 local ChallengeModeRecapScene = require("client.src.scenes.ChallengeModeRecapScene")
+local Layout = require("client.src.ui.Layout")
 
 -- Scene for one battle in a challenge mode game
 local Game1pChallenge = class(function(self, sceneParams)
   self.totalTimeQuads = {}
   self.stageIndex = GAME.battleRoom.run.stageIndex
-  self.timeSplitElement = ChallengeModeTimeSplitsUIElement({x = consts.CANVAS_WIDTH / 2, y = 280}, GAME.battleRoom, self.stageIndex)
+  self.timeSplitElement = ChallengeModeTimeSplitsUIElement(
+    {layoutRules = {floating = Layout.floatAt("leftTop", consts.CANVAS_WIDTH / 2, 280)}},
+    GAME.battleRoom,
+    self.stageIndex
+  )
   self.uiRoot:addChild(self.timeSplitElement)
 
 end, GameBase)

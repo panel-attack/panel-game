@@ -1,5 +1,6 @@
 local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
+local Layout = require("client.src.ui.Layout")
 local tableUtils = require("common.lib.tableUtils")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
@@ -53,8 +54,7 @@ local function createSfxMenuInfo(characterId)
     sfxLabels[#sfxLabels + 1] = ui.Label({
         text = string.match(sfx, "(.*)[.]"),
         translate = false,
-        width = BUTTON_WIDTH,
-        height = BUTTON_HEIGHT,
+        layoutRules = {sizing = Layout.fixedSize(BUTTON_WIDTH, BUTTON_HEIGHT)},
         isVisible = false})
     sfxValues[#sfxValues + 1] = sfx
   end
@@ -68,8 +68,7 @@ function SoundTest:load()
     characterLabels[#characterLabels + 1] = ui.Label({
         text = character.display_name,
         translate = false,
-        width = BUTTON_WIDTH,
-        height = BUTTON_HEIGHT})
+        layoutRules = {sizing = Layout.fixedSize(BUTTON_WIDTH, BUTTON_HEIGHT)}})
     characterIds[#characterIds + 1] = character.id
   end
   
@@ -105,8 +104,7 @@ function SoundTest:load()
     stageLabels[#stageLabels + 1] = ui.Label({
         text = stage.display_name,
         translate = false,
-        width = BUTTON_WIDTH,
-        height = BUTTON_HEIGHT})
+        layoutRules = {sizing = Layout.fixedSize(BUTTON_WIDTH, BUTTON_HEIGHT)}})
     stageIds[#stageIds + 1] = stage.id
   end
   local stageStepper = ui.Stepper(

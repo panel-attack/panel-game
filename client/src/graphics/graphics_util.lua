@@ -2,6 +2,7 @@ local consts = require("common.engine.consts")
 local logger = require("common.lib.logger")
 local FileUtils = require("client.src.FileUtils")
 local system = require("client.src.system")
+local ClipStack = require("client.src.graphics.ClipStack")
 
 -- Utility methods for drawing
 local GraphicsUtil = {
@@ -10,7 +11,9 @@ local GraphicsUtil = {
   fontDpiScale = 1,
   fontCache = {},
   ---@type love.Quad[]
-  quadPool = {}
+  quadPool = {},
+  -- the clips limiting what is drawn; push a shape before drawing inside it and pop it after
+  clipStack = ClipStack()
 }
 
 -- a local table to quickly crosscheck whether a quad is in the quadpool or not by using the quad as the index
@@ -384,41 +387,6 @@ function GraphicsUtil.drawClearText(text, x, y, ox, oy)
 
   GraphicsUtil.setColor(1, 1, 1, 1)
   GraphicsUtil.draw(text, x + 0, y + 0, 0, 1, 1, ox, oy)
-end
-
-function GraphicsUtil.getAlignmentOffset(parentElement, childElement)
-  local xOffset, yOffset
-  if childElement.hAlign == "center" then
-    xOffset = parentElement.width / 2 - childElement.width / 2
-  elseif childElement.hAlign == "right" then
-    xOffset = parentElement.width - childElement.width
-  else -- if hAlign == "left" then
-    -- default
-    xOffset = 0
-  end
-
-  if childElement.vAlign == "center" then
-    yOffset = parentElement.height / 2 - childElement.height / 2
-  elseif childElement.vAlign == "bottom" then
-    yOffset = parentElement.height - childElement.height
-  else --if uiElement.vAlign == "top" then
-    -- default
-    yOffset = 0
-  end
-
-  return math.round(xOffset), math.round(yOffset)
-end
-
--- sets the translation for a childElement inside of a parentElement so that
--- x=0, y=0 aligns the childElement inside the parentElement according to the settings
-function GraphicsUtil.applyAlignment(parentElement, childElement)
-  love.graphics.push("transform")
-  love.graphics.translate(GraphicsUtil.getAlignmentOffset(parentElement, childElement))
-end
-
--- resets the translation of the last alignment adjustment
-function GraphicsUtil.resetAlignment()
-  love.graphics.pop()
 end
 
 -- Copies a texture's pixels from the GPU into a new ImageData at the texture's pixel size

@@ -1,6 +1,7 @@
 local Scene = require("client.src.scenes.Scene")
 local tableUtils = require("common.lib.tableUtils")
 local ui = require("client.src.ui")
+local Layout = require("client.src.ui.Layout")
 local consts = require("common.engine.consts")
 local inputManager = require("client.src.inputManager")
 local class = require("common.lib.class")
@@ -259,30 +260,27 @@ function InputConfigMenu:loadUI()
   -- Create a centered vertical stack panel for all content
   local contentStack = ui.StackPanel({
     alignment = "top",
-    width = consts.CANVAS_WIDTH,
-    hAlign = "center",
-    vAlign = "center"
+    layoutRules = {
+      sizing = {horizontal = Layout.fixed(consts.CANVAS_WIDTH)},
+      childAlignment = {x = "center"},
+      floating = Layout.floatAt("centerCenter")
+    }
   })
 
   -- Header text
   local headerText = ui.Label({
     text = "config_input_welcome",
-    hAlign = "center",
-    vAlign = "center",
     fontSize = 16
   })
   contentStack:addElement(headerText)
 
   contentStack:addElement(ui.UiElement({
-    width = 1,
-    height = 10
+    layoutRules = {sizing = Layout.fixedSize(1, 10)}
   }))
 
   -- New controller message (conditionally visible)
   self.newControllerLabel = ui.Label({
     text = "input_config_new_controller",
-    hAlign = "center",
-    vAlign = "center",
     textColor = GAME.theme.colors.highlightTextColor,
     fontSize = 14
   })
@@ -290,8 +288,7 @@ function InputConfigMenu:loadUI()
   contentStack:addElement(self.newControllerLabel)
 
   contentStack:addElement(ui.UiElement({
-    width = 1,
-    height = 10
+    layoutRules = {sizing = Layout.fixedSize(1, 10)}
   }))
 
   -- Create menu options
@@ -335,6 +332,8 @@ function InputConfigMenu:loadUI()
   menuOptions[#menuOptions + 1] = self.backMenuItem
 
   self.menu = ui.Menu.createCenteredMenu(menuOptions, 0)
+  -- the menu takes its place in the stack rather than centering itself on the screen
+  self.menu:setLayoutRule("floating", nil)
   contentStack:addElement(self.menu)
 
   self.uiRoot:addChild(contentStack)

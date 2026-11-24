@@ -1,4 +1,5 @@
 local DiscreteImageSlider = require("client.src.ui.DiscreteImageSlider")
+local UIElement = require("client.src.ui.UIElement")
 local logger = require("common.lib.logger")
 
 local function createMockImage(width, height)
@@ -225,10 +226,11 @@ local function testLayoutDimensions()
     values = values,
     itemSpacing = 10
   })
+  slider:layOut()
 
   -- Expected width: 50 + 10 + 40 + 10 + 30 = 140
-  assert(slider.width == 140, "Width should sum all items and spacing")
-  assert(slider.height == 60, "Height should match item height")
+  assert(slider.layoutRect.width == 140, "Width should sum all items and spacing")
+  assert(slider.layoutRect.height == 60, "Height should match item height")
 
   logger.trace("passed test testLayoutDimensions")
 end
@@ -245,8 +247,10 @@ local function testLayoutDimensionsNoSpacing()
     itemSpacing = 0
   })
 
+  slider:layOut()
+
   -- Expected width: 50 + 40 + 30 = 120
-  assert(slider.width == 120, "Width should sum all items without spacing")
+  assert(slider.layoutRect.width == 120, "Width should sum all items without spacing")
 
   logger.trace("passed test testLayoutDimensionsNoSpacing")
 end
@@ -262,6 +266,7 @@ local function testStackPanelLayoutPositions()
     values = values,
     itemSpacing = 5
   })
+  slider:layOut()
 
   local children = slider.stackPanel.children
   local itemCount = 0
@@ -270,13 +275,13 @@ local function testStackPanelLayoutPositions()
   for _, child in ipairs(children) do
     if child.discreteIndex then
       itemCount = itemCount + 1
-      positions[child.discreteIndex] = child.x
+      positions[child.discreteIndex] = child.layoutRect.x
     end
   end
 
   assert(itemCount == 3, "Should have 3 item children")
   assert(positions[1] == 0, "Item 1 should be at x=0")
-  assert(positions[2] == 55, "Item 2 should be at x=55 (50 + 5)")
+  assert(positions[2] == 56, "Item 2 should be at x=56 (50 + 5, rounded to even points)")
   assert(positions[3] == 100, "Item 3 should be at x=100 (50 + 5 + 40 + 5)")
 
   logger.trace("passed test testStackPanelLayoutPositions")
@@ -294,8 +299,10 @@ local function testGetValueForPos()
     itemSpacing = 0
   })
 
-  slider.x = 100
-  slider.y = 100
+  -- places the slider at 100, 100
+  local parent = UIElement({layoutRules = {padding = {left = 100, top = 100}}})
+  parent:addChild(slider)
+  parent:layOut()
 
   -- Click near center of first item (x=100, width=50, center=125)
   local index1 = slider:getValueForPos(125)
@@ -342,10 +349,12 @@ local function testMixedWidthsAndHeights()
     itemSpacing = 0
   })
 
+  slider:layOut()
+
   -- Width should be sum: 20 + 50 + 80 + 10 = 160
-  assert(slider.width == 160, "Width should handle mixed widths")
+  assert(slider.layoutRect.width == 160, "Width should handle mixed widths")
   -- Height should be max: 90
-  assert(slider.height == 90, "Height should be tallest item")
+  assert(slider.layoutRect.height == 90, "Height should be tallest item")
 
   logger.trace("passed test testMixedWidthsAndHeights")
 end

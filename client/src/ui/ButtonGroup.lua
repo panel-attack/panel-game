@@ -31,22 +31,11 @@ local function setButtons(self, buttons, values, selectedIndex)
   self.values = values
   self.buttons = buttons
 
-  local overallWidth = 0
-  local overallHeight = 0
-  for i, button in ipairs(buttons) do
-    overallWidth = overallWidth + button.width
-    if i > 1 then 
-       button.x = self.buttons[i - 1].x + self.buttons[i - 1].width + BUTTON_PADDING
-       overallWidth = overallWidth + BUTTON_PADDING
-    end
+  for _, button in ipairs(buttons) do
     button.onClick = genButtonGroupFn(self, button)
     self:addChild(button)
-    overallHeight = math.max(overallHeight, button.height)
   end
-  self.width = overallWidth
-  self.height = overallHeight
-  self.buttons[self.selectedIndex].backgroundColor = {.5, .5, 1, .7}
-  self.value = self.values[self.selectedIndex]
+  self:refreshSelection()
 end
 
 local function setActiveButton(self, selectedIndex)
@@ -65,6 +54,7 @@ end
 local ButtonGroup = class(
   function(self, options)
     self.selectedIndex = options.selectedIndex or 1
+    self:setLayoutRule("childGap", BUTTON_PADDING)
 
     self.onChange = options.onChange or function() end
 
@@ -94,19 +84,8 @@ function ButtonGroup:receiveInputsSelf(inputSource, dt)
   end
 end
 
-function ButtonGroup:refreshLayout()
-  local overallWidth = 0
-  local overallHeight = 0
-  for i, button in ipairs(self.buttons) do
-    overallWidth = overallWidth + button.width
-    if i > 1 then
-       button.x = self.buttons[i - 1].x + self.buttons[i - 1].width + BUTTON_PADDING
-       overallWidth = overallWidth + BUTTON_PADDING
-    end
-    overallHeight = math.max(overallHeight, button.height)
-  end
-  self.width = overallWidth
-  self.height = overallHeight
+-- Marks the selected button and takes its value
+function ButtonGroup:refreshSelection()
   self.buttons[self.selectedIndex].backgroundColor = {.5, .5, 1, .7}
   self.value = self.values[self.selectedIndex]
 end
@@ -118,7 +97,7 @@ function ButtonGroup:removeButton(button)
   button:detach()
   if #self.buttons > 0 then
     self.selectedIndex = util.bound(1, self.selectedIndex, #self.buttons)
-    self:refreshLayout()
+    self:refreshSelection()
   end
 end
 

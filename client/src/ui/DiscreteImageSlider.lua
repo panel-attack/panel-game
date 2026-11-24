@@ -3,6 +3,7 @@ local Slider = require(PATH .. ".Slider")
 local StackPanel = require(PATH .. ".StackPanel")
 local ImageContainer = require(PATH .. ".ImageContainer")
 local UIElement = require(PATH .. ".UIElement")
+local Layout = require(PATH .. ".Layout")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 
@@ -31,12 +32,11 @@ local DiscreteImageSlider = class(
     self.onValueChange = options.onValueChange or function() end
     self.onlyChangeOnRelease = options.onlyChangeOnRelease or false
 
+    -- fits the images instead of the size the slider takes
+    self:setLayoutRule("sizing", nil)
+
     -- Create StackPanel for layout (as a child)
-    self.stackPanel = StackPanel({
-      alignment = "left",
-      hAlign = "left",
-      vAlign = "top"
-    })
+    self.stackPanel = StackPanel({alignment = "left"})
 
     -- Build index map, populate StackPanel, and calculate dimensions
     self:rebuildLayout()
@@ -138,8 +138,6 @@ function DiscreteImageSlider:rebuildLayout()
     local imageContainer = ImageContainer({
       image = image,
       scale = scale,
-      hAlign = "left",
-      vAlign = "top"
     })
 
     -- Store reference for tracking selection and value
@@ -151,40 +149,10 @@ function DiscreteImageSlider:rebuildLayout()
 
     -- Add spacing after each item except the last
     if i < #self.values and self.itemSpacing > 0 then
-      local spacer = UIElement({
-        width = self.itemSpacing,
-        height = imageContainer.height,
-        hAlign = "left",
-        vAlign = "top"
-      })
+      local spacer = UIElement({layoutRules = {sizing = {horizontal = Layout.fixed(self.itemSpacing)}}})
       self.stackPanel:addElement(spacer)
     end
   end
-
-  -- Update dimensions
-  self.width = self.stackPanel.width
-
-  -- Calculate max height from StackPanel children (the image containers)
-  local stackPanelMaxHeight = 0
-  for _, child in ipairs(self.stackPanel.children) do
-    if child.height > stackPanelMaxHeight then
-      stackPanelMaxHeight = child.height
-    end
-  end
-  self.stackPanel.height = stackPanelMaxHeight
-
-  -- Calculate total height including all direct children (e.g., labels in subclasses)
-  local totalHeight = stackPanelMaxHeight
-  for _, child in ipairs(self.children) do
-    if child ~= self.stackPanel then
-      -- For children positioned below stackPanel (with positive y offset)
-      local childBottomEdge = child.y + child.height
-      if childBottomEdge > totalHeight then
-        totalHeight = childBottomEdge
-      end
-    end
-  end
-  self.height = totalHeight
 
   self.min = 1
   self.max = math.max(1, #self.values)
@@ -223,9 +191,7 @@ function DiscreteImageSlider:getValueForPos(x)
 
   for i, child in ipairs(self.stackPanel.children) do
     if child.discreteIndex then
-      local itemScreenX = screenX + child.x
-      local itemCenterX = itemScreenX + child.width / 2
-      local distance = math.abs(relativeX - (child.x + child.width / 2))
+      local distance = math.abs(relativeX - (self.stackPanel.layoutRect.x + child.layoutRect.x + child.layoutRect.width / 2))
 
       if distance < bestDistance then
         bestDistance = distance
@@ -237,23 +203,23 @@ function DiscreteImageSlider:getValueForPos(x)
   return bestIndex
 end
 
----@return number x X position of current value's center
+---@return number x X position of current value's center, measured from the slider's left
 function DiscreteImageSlider:getCurrentXForValue()
   if self.value < 1 or self.value > #self.values then
-    return self.x
+    return 0
   end
 
   -- Find the UI element for this value index
   for _, child in ipairs(self.stackPanel.children) do
     if child.discreteIndex == self.value then
-      return self.x + child.x + child.width / 2
+      return self.stackPanel.layoutRect.x + child.layoutRect.x + child.layoutRect.width / 2
     end
   end
 
-  return self.x
+  return 0
 end
 
--- Gets the rectangle of the currently selected item (for SliderMenuItem highlighting)
+-- Gets the rectangle of the currently selected item, measured from the slider (for SliderMenuItem highlighting)
 ---@return {x: number, y: number, width: number, height: number}?
 function DiscreteImageSlider:getSelectedItemRect()
   if self.value < 1 or self.value > #self.values then
@@ -265,11 +231,12 @@ function DiscreteImageSlider:getSelectedItemRect()
     return nil
   end
 
+  local panelRect, rect = self.stackPanel.layoutRect, selectedContainer.layoutRect
   return {
-    x = selectedContainer.x,
-    y = selectedContainer.y,
-    width = selectedContainer.width,
-    height = selectedContainer.height
+    x = panelRect.x + rect.x,
+    y = panelRect.y + rect.y,
+    width = rect.width,
+    height = rect.height
   }
 end
 
@@ -289,13 +256,8 @@ function DiscreteImageSlider:drawSelf()
   local borderColor = GAME.theme.colors.menuDefaultBorderColor
 
   GraphicsUtil.setColor(borderColor[1], borderColor[2], borderColor[3], 0.8)
-  GraphicsUtil.drawRectangle(
-    "line",
-    self.x + selectedContainer.x,
-    self.y + selectedContainer.y,
-    selectedContainer.width,
-    selectedContainer.height
-  )
+  local panelRect, rect = self.stackPanel.layoutRect, selectedContainer.layoutRect
+  GraphicsUtil.drawRectangle("line", panelRect.x + rect.x, panelRect.y + rect.y, rect.width, rect.height)
 
   -- Reset color
   GraphicsUtil.setColor(1, 1, 1, 1)

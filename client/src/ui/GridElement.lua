@@ -7,7 +7,7 @@ local DebugSettings = require("client.src.debug.DebugSettings")
 local GridElement = class(function(gridElement, options)
   if options.content then
     gridElement.content = options.content
-    -- we still need to add it for the relative offset
+    -- in the cell's flow, so content that grows fills the cell
     gridElement:addChild(gridElement.content)
   end
   gridElement.description = options.description
@@ -27,7 +27,7 @@ end, UiElement)
 
 function GridElement:drawSelf()
   if self.drawBorders then
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+    GraphicsUtil.drawRectangle("line", 0, 0, self.layoutRect.width, self.layoutRect.height)
   end
 end
 

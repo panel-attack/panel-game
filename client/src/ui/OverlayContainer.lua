@@ -1,5 +1,6 @@
 local class = require("common.lib.class")
 local UiElement = require("client.src.ui.UIElement")
+local Layout = require("client.src.ui.Layout")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local consts = require("common.engine.consts")
 
@@ -16,14 +17,13 @@ local OverlayContainer = class(
     self.onClose = options.onClose
     self.active = false
 
-    self.width = consts.CANVAS_WIDTH
-    self.height = consts.CANVAS_HEIGHT
+    self:setLayoutRule("sizing", Layout.fixedSize(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT))
+    self:setLayoutRule("childAlignment", Layout.CENTER)
     self:setVisibility(false)
 
     if self.content then
       self:addChild(self.content)
-      self.content.hAlign = "center"
-      self.content.vAlign = "center"
+      self:centerContent()
     end
   end,
   UiElement, "OverlayContainer"
@@ -65,8 +65,17 @@ function OverlayContainer:setContent(content)
   self.content = content
   if self.content then
     self:addChild(self.content)
-    self.content.hAlign = "center"
-    self.content.vAlign = "center"
+    self:centerContent()
+  end
+end
+
+-- Places the content at the overlay's center: the overlay's flow centers it, and content that floats is pinned there,
+-- keeping the offset its own floating rule gave it
+function OverlayContainer:centerContent()
+  local floating = self.content.layoutRules.floating
+  if floating then
+    local offset = floating.offset
+    self.content:setLayoutRule("floating", Layout.floatAt("centerCenter", offset and offset.x, offset and offset.y))
   end
 end
 
@@ -77,7 +86,7 @@ function OverlayContainer:drawSelf()
   end
 
   GraphicsUtil.setColor(0, 0, 0, 0.75)
-  GraphicsUtil.drawRectangle("fill", 0, 0, self.width, self.height)
+  GraphicsUtil.drawRectangle("fill", 0, 0, self.layoutRect.width, self.layoutRect.height)
   GraphicsUtil.setColor(1, 1, 1, 1)
 end
 
@@ -90,8 +99,9 @@ function OverlayContainer:onTouch(x, y)
 
   if self.content then
     local contentX, contentY = self.content:getScreenPos()
-    local inContentBounds = x >= contentX and x < contentX + self.content.width and
-                           y >= contentY and y < contentY + self.content.height
+    local contentRect = self.content.layoutRect
+    local inContentBounds = x >= contentX and x < contentX + contentRect.width and
+                           y >= contentY and y < contentY + contentRect.height
 
     if not inContentBounds then
       self:close()

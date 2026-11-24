@@ -1,5 +1,6 @@
 local Scene = require("client.src.scenes.Scene")
 local ui = require("client.src.ui")
+local Layout = require("client.src.ui.Layout")
 local input = require("client.src.inputManager")
 local utf8 = require("common.lib.utf8Additions")
 local class = require("common.lib.class")
@@ -14,27 +15,20 @@ end, Scene)
 
 SetUserIdMenu.name = "SetUserIdMenu"
 
-
 function SetUserIdMenu:load(sceneParams)
   local menuX, menuY = unpack(themes[config.theme].main_menu_screen_pos)
   self.backgroundImg = themes[config.theme].images.bg_main
   self.serverIp = sceneParams.serverIp
 
   self.idInputField = ui.InputField({
-    x = menuX,
-    y = menuY + 30,
-    vAlign = "top",
-    width = 200,
-    height = 25,
+    layoutRules = {sizing = Layout.fixedSize(200, 25), floating = Layout.floatAt("leftTop", menuX, menuY + 30)},
     value = save.read_user_id_file(self.serverIp),
     filter = ui.InputField.Filter.NUMERIC,
   })
 
   self.confirmationButton = ui.TextButton({
     label = ui.Label({text = "go_"}),
-    x = menuX,
-    y = menuY + 60,
-    vAlign = "top",
+    layoutRules = {floating = Layout.floatAt("leftTop", menuX, menuY + 60)},
     onClick = function() self:confirmId() end
   })
 
@@ -45,10 +39,9 @@ function SetUserIdMenu:load(sceneParams)
            "ALTERING THIS TO SOMETHING ELSE THAN AN EXISTING ID WILL MAKE IT IMPOSSIBLE TO CONNECT TO 2P VS ONLINE FOR THIS SERVER\n",
     translate = false,
     wrap = true,
-    hFill = true,
-    hAlign = "center",
-    vAlign = "bottom",
-    y = -50,
+    layoutRules = {
+      floating = Layout.floatAt("centerBottom", 0, -50)
+    },
     fontSize = 20,
   })
 

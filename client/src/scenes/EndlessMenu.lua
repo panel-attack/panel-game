@@ -3,6 +3,7 @@ local class = require("common.lib.class")
 local GameModes = require("common.data.GameModes")
 local LevelPresets = require("common.data.LevelPresets")
 local ui = require("client.src.ui")
+local Layout = require("client.src.ui.Layout")
 
 -- Scene for the endless game setup menu
 ---@class EndlessMenu : CharacterSelect
@@ -24,7 +25,9 @@ function EndlessMenu:loadUserInterface()
   local player = self.battleRoom.players[1]
 
   local unitSize = 100
-  self.ui.grid = ui.Grid({unitSize = unitSize, gridWidth = 9, gridHeight = 6, unitMargin = 8, hAlign = "center", vAlign = "center"})
+  self.ui.grid = ui.Grid({
+    unitSize = unitSize, gridWidth = 9, gridHeight = 6, unitMargin = 8
+  })
   self.uiRoot:addChild(self.ui.grid)
 
   self.ui.characterIcons[1] = self:createPlayerIcon(player)
@@ -33,51 +36,58 @@ function EndlessMenu:loadUserInterface()
   self.ui.recordBox = self:createRecordsBox("Last Score")
   self.ui.recordBox:setVisibility(player.settings.style == GameModes.Styles.CLASSIC)
   self:refresh()
-  self.ui.grid:createElementAt(2, 1, 2, 1, "recordBox", self.ui.recordBox, nil, true)
+  local recordCell = self.ui.grid:createElementAt(2, 1, 2, 1, "recordBox", self.ui.recordBox, nil, true)
+  recordCell:setLayoutRule("childAlignment", Layout.CENTER_VERTICALLY)
 
-  self.ui.panelSelection = ui.MultiPlayerSelectionWrapper({hFill = true, alignment = "top", hAlign = "center", vAlign = "top"})
+  self.ui.panelSelection = ui.MultiPlayerSelectionWrapper({alignment = "top", layoutRules = {sizing = {horizontal = Layout.GROW}}})
   self.ui.panelSelection:setTitle("panels")
-  local panelCarousel = self:createPanelCarousel(player, self.ui.grid.unitSize - self.ui.grid.unitMargin * 2 - self.ui.panelSelection.height)
+  local panelCarousel = self:createPanelCarousel(player, self:getHeightUnderTitle(self.ui.panelSelection))
   self.ui.panelSelection:addElement(panelCarousel, player)
   self.ui.grid:createElementAt(1, 2, 2, 1, "panelSelection", self.ui.panelSelection, nil, true)
 
   local stageCarousel = self:createStageCarousel(player, self.ui.grid.unitSize * 2 - self.ui.grid.unitMargin * 2)
-  self.ui.stageSelection = ui.MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
+  self.ui.stageSelection = ui.MultiPlayerSelectionWrapper({
+    alignment = "left",
+    layoutRules = {sizing = {vertical = Layout.GROW}},
+  })
   self.ui.stageSelection:setTitle("stage")
   self.ui.stageSelection:addElement(stageCarousel, player)
-  self.ui.grid:createElementAt(3, 2, 2, 1, "stageSelection", self.ui.stageSelection, nil, true)
+  local stageCell = self.ui.grid:createElementAt(3, 2, 2, 1, "stageSelection", self.ui.stageSelection, nil, true)
+  stageCell:setLayoutRule("childAlignment", Layout.CENTER_HORIZONTALLY)
 
-  self.ui.styleSelection = ui.MultiPlayerSelectionWrapper({vFill = true, alignment = "left", hAlign = "center", vAlign = "center"})
+  -- as tall as its cell, the player's toggle centered down it
+  self.ui.styleSelection = ui.MultiPlayerSelectionWrapper({
+    alignment = "left",
+    layoutRules = {sizing = {vertical = Layout.GROW}, childAlignment = Layout.CENTER_VERTICALLY},
+  })
   self.ui.styleSelection:setTitle("endless_modern")
   local styleContainer, styleSelector = self:createStyleSelection(player, unitSize)
   self.ui.styleSelection:addElement(styleContainer, player)
 
-  self.ui.grid:createElementAt(5, 2, 1, 1, "styleSelection", self.ui.styleSelection, nil, true)
+  local styleCell = self.ui.grid:createElementAt(5, 2, 1, 1, "styleSelection", self.ui.styleSelection, nil, true)
+  styleCell:setLayoutRule("childAlignment", Layout.CENTER_HORIZONTALLY)
 
   self.ui.speedSelection = ui.MultiPlayerSelectionWrapper({
-    hFill = true,
     alignment = "top",
-    hAlign = "center",
-    vAlign = "top",
+    layoutRules = {sizing = {horizontal = Layout.GROW}},
   })
   self.ui.speedSelection:setTitle("speed")
-  local speedSlider = self:createSpeedSlider(player, self.ui.grid.unitSize - self.ui.grid.unitMargin * 2 - self.ui.speedSelection.height)
+  local speedSlider = self:createSpeedSlider(player, self:getHeightUnderTitle(self.ui.speedSelection))
   self.ui.speedSelection:addElement(speedSlider, player)
 
   self.ui.difficultySelection = ui.MultiPlayerSelectionWrapper({
-    hFill = true,
     alignment = "top",
-    hAlign = "center",
-    vAlign = "top",
+    layoutRules = {sizing = {horizontal = Layout.GROW}},
   })
   self.ui.difficultySelection:setTitle("difficulty")
 
-  local difficultyCarousel = self:createDifficultyCarousel(player, self.ui.grid.unitSize - self.ui.grid.unitMargin * 2 - self.ui.difficultySelection.height, LevelPresets.getClassicEndless)
+  local difficultyHeight = self:getHeightUnderTitle(self.ui.difficultySelection)
+  local difficultyCarousel = self:createDifficultyCarousel(player, difficultyHeight, LevelPresets.getClassicEndless)
   self.ui.difficultySelection:addElement(difficultyCarousel, player)
 
-  self.ui.levelSelection = ui.MultiPlayerSelectionWrapper({hFill = true, alignment = "top", hAlign = "center", vAlign = "top"})
+  self.ui.levelSelection = ui.MultiPlayerSelectionWrapper({alignment = "top", layoutRules = {sizing = {horizontal = Layout.GROW}}})
   self.ui.levelSelection:setTitle("level")
-  local levelSlider = self:createLevelSlider(player, 20, self.ui.grid.unitSize - self.ui.grid.unitMargin * 2 - self.ui.levelSelection.height)
+  local levelSlider = self:createLevelSlider(player, 20, self:getHeightUnderTitle(self.ui.levelSelection))
   self.ui.levelSelection:addElement(levelSlider, player)
 
   styleSelector.onValueChange = function(boolSelector, value)
@@ -100,7 +110,8 @@ function EndlessMenu:loadUserInterface()
   self.ui.grid:createElementAt(1, 3, characterGridWidth, characterGridHeight, "characterSelection", self.ui.characterGrid, true)
 
   self.ui.pageIndicator = self:createPageIndicator(self.ui.characterGrid)
-  self.ui.grid:createElementAt(5, 6, 1, 1, "pageIndicator", self.ui.pageIndicator)
+  local pageIndicatorCell = self.ui.grid:createElementAt(5, 6, 1, 1, "pageIndicator", self.ui.pageIndicator)
+  pageIndicatorCell:setLayoutRule("childAlignment", Layout.CENTER_HORIZONTALLY)
 
   self.ui.pageTurnButtons = self:createPageTurnButtons(self.ui.characterGrid)
 

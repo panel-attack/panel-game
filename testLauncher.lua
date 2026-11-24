@@ -111,6 +111,7 @@ local allTests = {
   "client.tests.PanelStatusTests",
   "client.tests.QueueTests",
   "client.tests.PlayerStackRollbackTests",
+  "client.tests.CharacterSelectLayoutTests",
   "client.tests.AnalyticsTests",
   "client.tests.PuzzleSetTests",
   "client.tests.PuzzleSetIteratorTests",
@@ -148,6 +149,11 @@ local allTests = {
   "client.tests.LobbyTests",
   "client.tests.InputSourceTests",
   "client.tests.UIElementFocusTests",
+  "client.tests.ClipTests",
+  "client.tests.LayoutSolverTests",
+  "client.tests.StepperTests",
+  "client.tests.UIElementLayoutTests",
+  "client.tests.ContainerLayoutTests",
 }
 
 -- Check for specific test name argument

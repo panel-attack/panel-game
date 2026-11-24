@@ -3,11 +3,14 @@ local UiElement = require("client.src.ui.UIElement")
 local Notification = require("client.src.ui.Notification")
 local Flux = require("client.lib.flux.flux")
 local consts = require("common.engine.consts")
+local Layout = require("client.src.ui.Layout")
 
 -- Shows notifications in MAX_SHOWN places stacked downward from the top right of the canvas, above every scene.
 -- Game puts it in uiRoot after the navigation stack, so it is drawn over the scenes and lasts across scene changes;
 -- it never takes touches or input.
 -- A notification keeps its place until it has slid out; the rest wait their turn and slide into the places freed.
+-- Each notification floats at the top right, a gap under the notification in the place above it, so it follows that
+-- one's height; once that one leaves, it is pinned where the last layout put it.
 ---@class NotificationCenter : UiElement
 ---@field notifications Notification[] the shown notifications, oldest first
 ---@field places table<Notification, integer> the place each shown notification holds, 1 at the top
@@ -21,8 +24,14 @@ local NotificationCenter = class(
   ---@param self NotificationCenter
   ---@param options UiElementOptions
   function(self, options)
-    self.width = options.width or consts.CANVAS_WIDTH
-    self.height = options.height or consts.CANVAS_HEIGHT
+    local rules = options.layoutRules or {}
+    if not rules.sizing then
+      self:setLayoutRule("sizing", Layout.fixedSize(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT))
+    end
+    -- it lies over the scenes, never beside them
+    if not rules.floating then
+      self:setLayoutRule("floating", Layout.floatAt("leftTop"))
+    end
     self.notifications = {}
     self.places = {}
     self.waiting = {}
@@ -65,10 +74,45 @@ function NotificationCenter:showNow(notification)
   local place = self:topmostFreePlace()
   self.notifications[#self.notifications + 1] = notification
   self.places[notification] = place
+  notification:setLayoutRule("id", "notification" .. notification.id)
+  notification:setLayoutRule("floating", self:floatingInPlace(place))
   self:addChild(notification)
-  notification.x = self.width - NotificationCenter.RIGHT_MARGIN - notification.width
-  notification.y = NotificationCenter.TOP_MARGIN + (place - 1) * (notification.height + NotificationCenter.GAP)
-  notification:start(self.tweens, self:takeStartDelay(), self.width - notification.x)
+  notification:start(self.tweens, self:takeStartDelay(), NotificationCenter.RIGHT_MARGIN)
+end
+
+---@param place integer
+---@return Notification? # the notification shown in the place
+function NotificationCenter:notificationIn(place)
+  for _, notification in ipairs(self.notifications) do
+    if self.places[notification] == place then
+      return notification
+    end
+  end
+end
+
+-- Floats a notification at the top right, under the notification in the place above when there is one
+---@param place integer
+---@return LayoutFloating
+function NotificationCenter:floatingInPlace(place)
+  local above = self:notificationIn(place - 1)
+  if above then
+    return {
+      attachTo = "element",
+      parentId = above.layoutRules.id,
+      attachPoints = {element = "rightTop", parent = "rightBottom"},
+      offset = {y = NotificationCenter.GAP},
+    }
+  end
+  return Layout.floatAt("rightTop", -NotificationCenter.RIGHT_MARGIN, NotificationCenter.TOP_MARGIN)
+end
+
+-- Pins the notification under the one that left where the last layout put it, so it keeps its place
+---@param place integer the place of the notification that left
+function NotificationCenter:pinNotificationUnder(place)
+  local below = self:notificationIn(place + 1)
+  if below then
+    below:setLayoutRule("floating", Layout.floatAt("rightTop", -NotificationCenter.RIGHT_MARGIN, below.layoutRect.y))
+  end
 end
 
 -- The topmost place no shown notification holds
@@ -108,6 +152,7 @@ function NotificationCenter:removeFinished()
     if notification.finished then
       notification:detach()
       table.remove(self.notifications, i)
+      self:pinNotificationUnder(self.places[notification])
       self.places[notification] = nil
     end
   end

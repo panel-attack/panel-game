@@ -153,9 +153,14 @@ end
 
 local function assertItemsLineUp(menu)
   local items = menu.menu.menuItems
+  items[1]:getRoot():layOut()
+  local firstX = items[1]:getScreenPos()
+  local firstWidth = items[1].layoutRect.width
   for _, menuItem in ipairs(items) do
-    assert(menuItem.x == items[1].x and menuItem.width == items[1].width,
-           tostring(itemText(menuItem)) .. " is " .. menuItem.width .. " wide at " .. menuItem.x .. ", the first item " .. items[1].width .. " at " .. items[1].x)
+    local x = menuItem:getScreenPos()
+    local width = menuItem.layoutRect.width
+    assert(x == firstX and width == firstWidth,
+           tostring(itemText(menuItem)) .. " is " .. width .. " wide at " .. x .. ", the first item " .. firstWidth .. " at " .. firstX)
   end
 end
 

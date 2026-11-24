@@ -3,6 +3,7 @@ local UiElement = require(PATH .. ".UIElement")
 local Label = require(PATH .. ".Label")
 local TextButton = require(PATH .. ".TextButton")
 local Grid = require(PATH .. ".Grid")
+local Layout = require(PATH .. ".Layout")
 local class = require("common.lib.class")
 local Signal = require("common.lib.signal")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
@@ -40,25 +41,18 @@ local PagedUniGrid = class(function(self, options)
   self.unitMargin = options.unitMargin or 0
   self.gridHeight = options.gridHeight
   self.gridWidth = options.gridWidth
-  self.width = self.unitSize * self.gridWidth
-  self.height = self.unitSize * self.gridHeight
+  self:setLayoutRule("sizing", Layout.fixedSize(self.unitSize * self.gridWidth, self.unitSize * self.gridHeight))
   self.elements = {}
   self.pages = {}
   self.pageTurnButtons = {}
   self.pageTurnButtons.left = TextButton({
     label = Label({text = "<", translate = false}),
-    hAlign = "left",
-    vAlign = "top",
-    width = self.unitSize / 2,
-    height = self.unitSize / 2,
+    layoutRules = {sizing = Layout.fixedSize(self.unitSize / 2, self.unitSize / 2)},
     onClick = function(selfElement, inputSource, holdTime) self:turnPage(-1) end,
   })
   self.pageTurnButtons.right = TextButton({
     label = Label({text = ">", translate = false}),
-    hAlign = "left",
-    vAlign = "top",
-    width = self.unitSize / 2,
-    height = self.unitSize / 2,
+    layoutRules = {sizing = Layout.fixedSize(self.unitSize / 2, self.unitSize / 2)},
     onClick = function(selfElement, inputSource, holdTime) self:turnPage(1) end,
   })
   addNewPage(self)
@@ -104,7 +98,7 @@ end
 function PagedUniGrid:drawSelf()
   if DebugSettings.showUIElementBorders() then
     GraphicsUtil.setColor(1, 0, 0, 1)
-    GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+    GraphicsUtil.drawRectangle("line", 0, 0, self.layoutRect.width, self.layoutRect.height)
     GraphicsUtil.setColor(1, 1, 1, 1)
   end
 end

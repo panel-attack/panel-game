@@ -1,4 +1,5 @@
 local UIElement = require("client.src.ui.UIElement")
+local Layout = require("client.src.ui.Layout")
 local ui = require("client.src.ui")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
@@ -13,6 +14,8 @@ local CARD_SPACING = 6
 local CARDS_PER_LINE = 4
 local CARD_STRIP_BOTTOM_MARGIN = 8
 local ROW_SPACING = 2
+-- the last row keeps the space after it that every row has
+local ROW_COLUMN_PADDING = {bottom = ROW_SPACING}
 local WRAP_WIDTH = CARDS_PER_LINE * CARD_SIZE + (CARDS_PER_LINE - 1) * CARD_SPACING
 local HIGHLIGHT_SECONDS = 3.0
 local BADGE_SCALE = 0.8
@@ -68,13 +71,14 @@ local COLORS = {
 ---@field puzzle Puzzle The puzzle instance
 ---@field stack Stack The player stack
 ---@field headingLabel Label The heading text label
+---@field cardStrip UiElement the space under the heading the cards are drawn in
+---@field rowColumn UiElement the column of objective rows under the cards
 ---@field cards PuzzleGoalCard[]
 ---@field rows PuzzleGoalRow[]
 ---@field highlightTimer number seconds the box stays highlighted for
 ---@field goalCounts table<string, table<integer, integer>> goal kind -> size -> how many of it the puzzle asks for
 ---@field cardPositions table<boolean, table<integer, integer>> isChain -> size -> cards of it walked so far this refresh
 ---@field replacements string[] the row text replacements of the row being refreshed
----@field needsLayout boolean set when a row's text or color changed, so update re-lays out the box
 ---@overload fun(options: PuzzleGoalDisplayOptions): PuzzleGoalDisplay
 local PuzzleGoalDisplay = class(
   function(self, options)
@@ -91,9 +95,15 @@ local PuzzleGoalDisplay = class(
     self.replacements = {}
 
     self.cards = self:createCards()
+    self:setLayoutRule("layoutDirection", "topToBottom")
+    self:setLayoutRule("padding", {
+      left = BACKGROUND_PADDING,
+      right = BACKGROUND_PADDING,
+      top = BACKGROUND_PADDING_VERTICAL,
+      bottom = BACKGROUND_PADDING_VERTICAL
+    })
     self:createLabels()
     self:refreshProgress(false)
-    self:layout()
   end,
   UIElement
 )
@@ -150,18 +160,13 @@ end
 ---@param size integer?
 function PuzzleGoalDisplay:addRow(goalKind, key, size)
   local label = ui.Label({
-    x = BACKGROUND_PADDING,
-    y = 0,
-    width = 0,
-    height = 0,
     text = "",
     fontSize = 16,
     translate = true,
-    hAlign = "left",
-    vAlign = "top",
     wrapWidth = WRAP_WIDTH
   })
-  self:addChild(label)
+  self.rowColumn:addChild(label)
+  self.rowColumn:setLayoutRule("padding", ROW_COLUMN_PADDING)
   self.rows[#self.rows + 1] = {goalKind = goalKind, size = size, key = key, label = label, complete = false}
 end
 
@@ -180,22 +185,23 @@ function PuzzleGoalDisplay:addTargetRows(kind, key, repeatedKey)
   end
 end
 
--- Creates the heading and one objective row per goal, plus the swaps left when the puzzle has a swap limit
+-- Creates the heading, the cards' strip and one objective row per goal, plus the swaps left when the puzzle has a swap limit
 function PuzzleGoalDisplay:createLabels()
   self.headingLabel = ui.Label({
-    x = BACKGROUND_PADDING,
-    y = BACKGROUND_PADDING_VERTICAL,
-    width = 0,
-    height = 0,
     text = "",
     fontSize = 40,
     translate = true,
-    hAlign = "left",
-    vAlign = "top"
+    layoutRules = {sizing = {vertical = Layout.fixed(HEADING_HEIGHT)}}
   })
   self.headingLabel:setText(self:getHeadingKey(), {}, true)
   self.headingLabel:setTextColor(COLORS.heading[1], COLORS.heading[2], COLORS.heading[3], COLORS.heading[4])
+  local cardsInWidestLine = math.min(#self.cards, CARDS_PER_LINE)
+  local cardStripWidth = math.max(0, cardsInWidestLine * CARD_SIZE + (cardsInWidestLine - 1) * CARD_SPACING)
+  self.cardStrip = UIElement({layoutRules = {sizing = Layout.fixedSize(cardStripWidth, self:cardStripHeight())}})
+  self.rowColumn = UIElement({layoutRules = {layoutDirection = "topToBottom", childGap = ROW_SPACING}})
   self:addChild(self.headingLabel)
+  self:addChild(self.cardStrip)
+  self:addChild(self.rowColumn)
 
   self.rows = {}
   if self.puzzle.puzzleType == Puzzle.PUZZLE_TYPES.moves then
@@ -284,7 +290,7 @@ function PuzzleGoalDisplay:refreshCards(playEffects)
   end
 end
 
--- Brings the cards and rows up to date with the stack, re-laying out the box when a row's text or color changed
+-- Brings the cards and rows up to date with the stack
 ---@param playEffects boolean whether a card that completes plays its check animation
 function PuzzleGoalDisplay:refreshProgress(playEffects)
   self:refreshCards(playEffects)
@@ -300,7 +306,6 @@ function PuzzleGoalDisplay:refreshProgress(playEffects)
       row.label:setText(row.key, {unpack(replacements)}, true)
       local color = complete and COLORS.complete or COLORS.objective
       row.label:setTextColor(color[1], color[2], color[3], color[4])
-      self.needsLayout = true
     end
   end
 end
@@ -313,29 +318,6 @@ function PuzzleGoalDisplay:cardStripHeight()
   end
   local lines = math.ceil(#self.cards / CARDS_PER_LINE)
   return lines * CARD_SIZE + (lines - 1) * CARD_SPACING + CARD_STRIP_BOTTOM_MARGIN
-end
-
--- Places the rows under the heading and cards and sizes the box to fit its content
-function PuzzleGoalDisplay:layout()
-  self.needsLayout = false
-  local y = BACKGROUND_PADDING_VERTICAL + HEADING_HEIGHT + self:cardStripHeight()
-  local contentWidth = self.headingLabel.drawable and self.headingLabel.drawable:getWidth() or 0
-  if #self.cards > 0 then
-    local cardsInWidestLine = math.min(#self.cards, CARDS_PER_LINE)
-    contentWidth = math.max(contentWidth, cardsInWidestLine * CARD_SIZE + (cardsInWidestLine - 1) * CARD_SPACING)
-  end
-
-  for _, row in ipairs(self.rows) do
-    row.label.y = y
-    local drawable = row.label.drawable
-    if drawable then
-      y = y + drawable:getHeight() + ROW_SPACING
-      contentWidth = math.max(contentWidth, drawable:getWidth())
-    end
-  end
-
-  self.width = contentWidth + (BACKGROUND_PADDING * 2)
-  self.height = y + BACKGROUND_PADDING_VERTICAL
 end
 
 function PuzzleGoalDisplay:update(dt)
@@ -352,9 +334,6 @@ function PuzzleGoalDisplay:update(dt)
   end
 
   self:refreshProgress(true)
-  if self.needsLayout then
-    self:layout()
-  end
 end
 
 -- CSS's ease-out, cubic-bezier(0, 0, 0.58, 1), which the check animation was designed with
@@ -478,16 +457,16 @@ function PuzzleGoalDisplay:drawSelf()
   else
     GraphicsUtil.setColor(COLORS.background)
   end
-  love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+  love.graphics.rectangle("fill", 0, 0, self.layoutRect.width, self.layoutRect.height)
 
   GraphicsUtil.setColor(COLORS.border)
-  love.graphics.rectangle("line", self.x, self.y, self.width, self.height)
+  love.graphics.rectangle("line", 0, 0, self.layoutRect.width, self.layoutRect.height)
 
-  local stripY = self.y + BACKGROUND_PADDING_VERTICAL + HEADING_HEIGHT
+  local strip = self.cardStrip.layoutRect
   for i, card in ipairs(self.cards) do
     local column = (i - 1) % CARDS_PER_LINE
     local line = math.floor((i - 1) / CARDS_PER_LINE)
-    self:drawCard(card, self.x + BACKGROUND_PADDING + column * (CARD_SIZE + CARD_SPACING), stripY + line * (CARD_SIZE + CARD_SPACING))
+    self:drawCard(card, strip.x + column * (CARD_SIZE + CARD_SPACING), strip.y + line * (CARD_SIZE + CARD_SPACING))
   end
 
   GraphicsUtil.setColor(COLORS.white)

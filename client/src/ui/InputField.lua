@@ -3,6 +3,7 @@ local util = require("common.lib.util")
 
 local PATH = (...):gsub('%.[^%.]+$', '')
 local UIElement = require(PATH .. ".UIElement")
+local Layout = require(PATH .. ".Layout")
 local inputFieldManager = require(PATH .. ".inputFieldManager")
 local class = require("common.lib.class")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
@@ -32,17 +33,12 @@ local InputField = class(
     self.backgroundColor = options.backgroundColor or {.3, .3, .3, .7}
     self.outlineColor = options.outlineColor or {.5, .5, .5, .7}
 
-    -- text alignments settings
-    -- must be one of the following values:
-    -- left, right, center
-    self.hAlign = options.hAlign or 'left'
-    self.vAlign = options.vAlign or 'center'
-
     self.text = GraphicsUtil.newText(currentFont, self.value)
-    -- stretch to fit text
+    -- stretch to fit text, at least as large as a fixed size the caller gave
     local textWidth, textHeight = self.text:getDimensions()
-    self.width = math.max(textWidth + 6, self.width)
-    self.height = math.max(textHeight + 6, self.height)
+    local sizing = self.layoutRules.sizing or {}
+    self:setLayoutRule("sizing", {horizontal = self.fixedAtLeast(sizing.horizontal, textWidth + 6),
+                                  vertical = self.fixedAtLeast(sizing.vertical, textHeight + 6)})
 
     self.isEditing = false
     self.offset = 0
@@ -53,6 +49,19 @@ local InputField = class(
   end,
   UIElement
 )
+
+-- Returns a fixed sizing at least the size, as large as a fixed sizing given; a growing or fitting sizing is kept
+---@param sizing LayoutSizing?
+---@param size number
+---@return LayoutSizing
+function InputField.fixedAtLeast(sizing, size)
+  if sizing == nil then
+    return Layout.fixed(size)
+  elseif sizing.type == "fixed" then
+    return Layout.fixed(math.max(size, sizing.min))
+  end
+  return sizing
+end
 
 function InputField:onTouch(x, y)
   self:startEditing()
@@ -83,18 +92,18 @@ function InputField:onVisibilityChanged()
 end
 
 -- centered on the cursor glyph itself so an empty field without placeholder text doesn't push the cursor down
----@return number x
----@return number y
+---@return number x from the field's left
+---@return number y from the field's top
 function InputField:getCursorPos()
-  local y = self.y + (self.height - textCursor:getHeight()) / 2
+  local y = (self.layoutRect.height - textCursor:getHeight()) / 2
   if self.offset == 0 then
-    return self.x + textOffset, y
+    return textOffset, y
   end
 
   local byteoffset = utf8.offset(self.value, self.offset)
   local text = string.sub(self.value, 1, byteoffset)
   local font = love.graphics.getFont()
-  return self.x + textOffset + GraphicsUtil.newText(font, text):getWidth(), y
+  return textOffset + GraphicsUtil.newText(font, text):getWidth(), y
 end
 
 ---Stops typed text going into this field
@@ -161,16 +170,16 @@ local valueColor = {1, 1, 1, 1}
 local placeholderColor = {.5, .5, .5, 1}
 function InputField:drawSelf()
   GraphicsUtil.setColor(self.outlineColor)
-  GraphicsUtil.drawRectangle("line", self.x, self.y, self.width, self.height)
+  GraphicsUtil.drawRectangle("line", 0, 0, self.layoutRect.width, self.layoutRect.height)
   GraphicsUtil.setColor(self.backgroundColor)
-  GraphicsUtil.drawRectangle("fill", self.x, self.y, self.width, self.height)
+  GraphicsUtil.drawRectangle("fill", 0, 0, self.layoutRect.width, self.layoutRect.height)
 
   local text = self.value ~= "" and self.text or self.placeholderText
   local textColor = self.value ~= "" and valueColor or placeholderColor
   local textHeight = text:getHeight()
 
   GraphicsUtil.setColor(textColor)
-  GraphicsUtil.draw(text, self.x + textOffset, self.y + (self.height - textHeight) / 2, 0, 1, 1)
+  GraphicsUtil.draw(text, textOffset, (self.layoutRect.height - textHeight) / 2, 0, 1, 1)
 
   if self.isEditing then
     local cursorFlashPeriod = .5
