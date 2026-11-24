@@ -9,6 +9,7 @@ local inputFieldManager = require("client.src.ui.inputFieldManager")
 local RunTimeGraph = require("client.src.RunTimeGraph")
 local CustomRun = require("client.src.CustomRun")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local RendererSetting = require("client.src.graphics.RendererSetting")
 local prof = require("common.lib.zoneProfiler")
 local ReplayV3 = require("common.data.ReplayV3")
 require("common.lib.util")
@@ -332,6 +333,16 @@ function love.errorhandler(msg)
   if logger.messageBuffer then
     logger.info("config during crash: " .. table_to_string(config))
     pcall(love.filesystem.write, "crash.log", tostring(logger.messageBuffer))
+  end
+
+  -- a lost Vulkan device fails again on every frame, error screen included, so start the game again without Vulkan
+  local hasRenderer, rendererName = pcall(love.graphics.getRendererInfo)
+  local restartValue = hasRenderer and RendererSetting.fallbackRestartValue(msg, rendererName, love.restart)
+  if restartValue then
+    logger.info("Restarting without Vulkan after: " .. msg)
+    return function()
+      return "restart", restartValue
+    end
   end
   if #sanitizedMessage ~= #msg then
     table.insert(errorLines, "Invalid UTF-8 string in error message.")

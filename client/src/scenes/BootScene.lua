@@ -5,6 +5,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local logger = require("common.lib.logger")
 local fileUtils = require("client.src.FileUtils")
 local ModLoader = require("client.src.mods.ModLoader")
+local RendererSetting = require("client.src.graphics.RendererSetting")
 
 local BootScene = class(function(scene, sceneParams)
   scene.migrationRoutine = coroutine.create(scene.migrate)
@@ -70,6 +71,11 @@ function BootScene:updateSelf(dt)
       if not config.language_code then
         local LanguageSelectSetup = require("client.src.scenes.LanguageSelectSetup")
         GAME.navigationStack:push(LanguageSelectSetup({}))
+      end
+
+      if RendererSetting.isFallbackLaunch(love.restart) then
+        local RendererFallbackSetup = require("client.src.scenes.RendererFallbackSetup")
+        GAME.navigationStack:push(RendererFallbackSetup({rendererName = love.graphics.getRendererInfo()}))
       end
     else
       local success, status = coroutine.resume(self.setupRoutine, GAME)
