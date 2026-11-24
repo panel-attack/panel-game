@@ -605,6 +605,15 @@ function Game:toggleFullscreen()
   self:updateCanvasPositionAndScale(newWidth, newHeight)
 end
 
+-- Returns the largest scale that shows the whole canvas in the window.
+---@param windowWidth number
+---@param windowHeight number
+---@return number scale
+function Game:getFitScale(windowWidth, windowHeight)
+  local canvasWidth, canvasHeight = self.globalCanvas:getDimensions()
+  return math.min(windowWidth / canvasWidth, windowHeight / canvasHeight)
+end
+
 -- Updates the scale and position values to use up the right size of the window based on the user's settings.
 ---@return boolean positionChanged
 ---@return boolean scaleChanged
@@ -630,24 +639,15 @@ function Game:updateCanvasPositionAndScale(newWindowWidth, newWindowHeight)
   self.canvasY = math.floor(newWindowHeight / 2)
 
   if config.gameScaleType == "fit" then
-    local w, h
-    local canvasWidth, canvasHeight = self.globalCanvas:getDimensions()
-    if newWindowHeight / canvasHeight > newWindowWidth / canvasWidth then
-      w = newWindowWidth
-      h = canvasHeight * newWindowWidth / canvasWidth
-    else
-      w = canvasWidth * newWindowHeight / canvasHeight
-      h = newWindowHeight
-    end
-    self.canvasXScale = w / canvasWidth
-    self.canvasYScale = h / canvasHeight
+    self.canvasXScale = self:getFitScale(newWindowWidth, newWindowHeight)
+    self.canvasYScale = self.canvasXScale
   elseif config.gameScaleType == "fixed" then
     self.canvasXScale = config.gameScaleFixedValue
     self.canvasYScale = config.gameScaleFixedValue
   elseif config.gameScaleType == "auto" then
     local availableScales = shallowcpy(self.automaticScales)
-    -- use a default minimum for automatic if the window gets too small
-    local newScale = 0.5
+    -- a window too small for every step fits the canvas instead, as on phones whose system bars leave less than 720 pixels
+    local newScale = self:getFitScale(newWindowWidth, newWindowHeight)
     for i= #availableScales, 1, -1 do
       local scale = availableScales[i]
       if (newWindowWidth >= self.globalCanvas:getWidth() * scale and newWindowHeight >= self.globalCanvas:getHeight() * scale) then
