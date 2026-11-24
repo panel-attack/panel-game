@@ -48,11 +48,26 @@ function LanguageSelectSetup:load(sceneParams)
   }))
 
   self.disclaimerLabel = ui.Label({
-    text = "translation_disclaimer",
+    text = "",
+    translate = false,
     hAlign = "center"
   })
 
   contentStack:addElement(self.disclaimerLabel)
+  self:setLanguage(Localization:get_language())
+end
+
+-- Switches the game to the language and shows its translation disclaimer, which English doesn't have
+---@param languageCode LanguageCode
+function LanguageSelectSetup:setLanguage(languageCode)
+  GAME:setLanguage(languageCode)
+  self.disclaimerLabel.fontSize = Localization.languageCodeToFontData[languageCode].fontSize
+  if languageCode == "EN" then
+    self.disclaimerLabel:setText("", nil, false)
+  else
+    self.disclaimerLabel:setText("translation_disclaimer", nil, true)
+    self.disclaimerLabel:refreshLocalization()
+  end
 end
 
 LanguageSelectSetup.name = "LanguageSelectSetup"
@@ -85,11 +100,8 @@ function LanguageSelectSetup:update(dt)
     if menuItem.selected then
       local code = Localization:getLanguageCode(menuItem.textButton.label.text)
       if Localization:get_language() ~= code then
-        GAME:setLanguage(code)
-        self.disclaimerLabel.fontSize = Localization.languageCodeToFontData[code].fontSize
+        self:setLanguage(code)
       end
-      
-      self.disclaimerLabel:refreshLocalization()
     end
   end
   

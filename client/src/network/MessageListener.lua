@@ -1,23 +1,22 @@
-local NetworkProtocol = require("common.network.NetworkProtocol")
 local class = require("common.lib.class")
 local util = require("common.lib.util")
 
 -- a message listener listens to exactly ONE type of server message
-local MessageListener = class(function(self, messageHeader)
+---@class MessageListener
+---@field messageHeader string
+---@field subscriptionList table<any, fun(subscriber: any, message: table)>
+---@overload fun(messageHeader: string): MessageListener
+local MessageListener = class(
+function(self, messageHeader)
   self.messageHeader = messageHeader
   self.subscriptionList = util.getWeaklyKeyedTable()
 end)
 
-
--- listens for messages with the specified header
--- passes any messages caught to the registered events
-function MessageListener:listen()
-  local messages = GAME.netClient.tcpClient.receivedMessageQueue:pop_all_with(self.messageHeader)
-  for i = 1, #messages do
-    local message = messages[i]
-    for subscriber, callback in pairs(self.subscriptionList) do
-      callback(subscriber, message)
-    end
+-- passes a message with the listener's header to the registered events
+---@param message table
+function MessageListener:handle(message)
+  for subscriber, callback in pairs(self.subscriptionList) do
+    callback(subscriber, message)
   end
 end
 
