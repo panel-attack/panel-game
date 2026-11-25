@@ -55,13 +55,13 @@ function ChallengeModeRecapScene:drawSelf()
   local drawY = 20
 
   local limit = consts.CANVAS_WIDTH
-  local message = "Congratulations!\n You beat " .. self.challengeMode.difficultyName .. "!"
+  local message = loc("challenge_congratulations") .. "\n" .. loc("challenge_beaten", self.challengeMode.difficultyName)
   GraphicsUtil.printf(message, 0, drawY, limit, "center", nil, nil, 30)
   self.uiRoot:draw()
 
   local limit = 400
   drawY = drawY + 120
-  GraphicsUtil.printf("Continues", drawX - limit / 2, drawY, limit, "center", nil, nil, 4)
+  GraphicsUtil.printf(loc("challenge_continues"), drawX - limit / 2, drawY, limit, "center", nil, nil, 4)
   drawY = drawY + 20
   GraphicsUtil.printf(self.challengeMode.run:getContinues(), drawX - limit / 2, drawY, limit, "center", nil, nil, 4)
 
