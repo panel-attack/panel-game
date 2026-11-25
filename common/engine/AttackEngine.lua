@@ -13,7 +13,7 @@ require("common.engine.checkMatches")
 ---@field startTime integer
 ---@field endsChain boolean
 ---@field garbage Garbage
-AttackPattern =
+local AttackPattern =
   class(
   function(self, width, height, startTime, metal, chain, endsChain)
     self.width = width
