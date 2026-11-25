@@ -89,7 +89,6 @@ function(self, args)
   self.poppedPanelIndex = 1
   self.lastPopLevelPlayed = 1
   self.lastPopIndexPlayed = 1
-  self.combo_chain_play = nil
   self.sfx_land = false
   self.sfx_garbage_thud = 0
   self.sfxSwap = false
@@ -1374,11 +1373,6 @@ end
 ---   this will primarily consist of SFX related functions   ---
 ----------------------------------------------------------------
 
-function PlayerStack:queueAttackSoundEffect(isChainLink, chainSize, comboSize, metalCount)
-  if self:canPlaySfx() then
-    self.combo_chain_play = self.attackSoundInfoForMatch(isChainLink, chainSize, comboSize, metalCount)
-  end
-end
 
 function PlayerStack:playSfx()
   --prof.push("stack sfx")
@@ -1407,8 +1401,7 @@ function PlayerStack:playSfx()
       -- and cancel it because an attack is performed on the exact same frame (takes priority)
       self.sfx_land = false
       SoundController:stopSfx(themes[config.theme].sounds.pops[self.lastPopLevelPlayed][self.lastPopIndexPlayed])
-      self.character:playAttackSfx(self.combo_chain_play)
-      self.combo_chain_play = nil
+      self:playQueuedAttackSound()
     end
     if self.sfxGarbageMatch then
       self.character:playGarbageMatchSfx()

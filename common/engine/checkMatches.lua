@@ -52,6 +52,27 @@ function Stack.getEstimatedGarbageLinesForCombo(comboSize)
   return ESTIMATED_GARBAGE_LINES_PER_COMBO[comboSize]
 end
 
+---Returns the smallest combo that sends exactly the pieces of the widths, or the widest piece's width + 1 if no combo sends them
+---@param widths integer[] the widths of the combo garbage pieces sent together, smallest first and at least one
+---@return integer
+function Stack.getComboSizeForGarbageWidths(widths)
+  for comboSize, pieces in ipairs(COMBO_GARBAGE) do
+    if #pieces == #widths then
+      local sendsThesePieces = true
+      for i = 1, #pieces do
+        if pieces[i] ~= widths[i] then
+          sendsThesePieces = false
+          break
+        end
+      end
+      if sendsThesePieces then
+        return comboSize
+      end
+    end
+  end
+  return widths[#widths] + 1
+end
+
 local function sortByPopOrder(panelList, isGarbage)
   table.sort(panelList, function(a, b)
     if a.row == b.row then

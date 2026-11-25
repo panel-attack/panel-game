@@ -2,10 +2,8 @@ local consts = require("common.engine.consts")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
 local Scene = require("client.src.scenes.Scene")
 local class = require("common.lib.class")
-local logger = require("common.lib.logger")
 local input = require("client.src.inputManager")
 local tableUtils = require("common.lib.tableUtils")
-local util = require("common.lib.util")
 local ChallengeModeTimeSplitsUIElement = require("client.src.graphics.ChallengeModeTimeSplitsUIElement")
 
 -- Gives a summary of the recently completed challenge mode game
@@ -14,7 +12,6 @@ local ChallengeModeTimeSplitsUIElement = require("client.src.graphics.ChallengeM
 ---@field timeSplitElement UiElement
 ---@field recapStartTime number
 ---@field minDisplayTime number
----@field maxDisplayTime number
 ---@field backgroundImg UpdatingImage
 local ChallengeModeRecapScene = class(
 function(self, sceneParams)
@@ -24,7 +21,6 @@ function(self, sceneParams)
   self.uiRoot:addChild(self.timeSplitElement)
   self.recapStartTime = love.timer.getTime()
   self.minDisplayTime = 2 -- the minimum amount of seconds the scene will be displayed for
-  self.maxDisplayTime = -1
 end, Scene)
 
 ChallengeModeRecapScene.name = "ChallengeModeRecapScene"
@@ -40,7 +36,7 @@ function ChallengeModeRecapScene:updateSelf(dt)
   -- if conditions are met, leave the scene
   local keyPressed = (tableUtils.length(input.isDown) > 0) or (tableUtils.length(input.mouse.isDown) > 0)
 
-  if ((displayTime >= self.maxDisplayTime and self.maxDisplayTime ~= -1) or (displayTime >= self.minDisplayTime and keyPressed)) then
+  if displayTime >= self.minDisplayTime and keyPressed then
     self:playValidationSfx()
     -- a direction held from here would otherwise keep scrolling the main menu
     input:ignoreHeldKeysUntilReleased()
@@ -55,13 +51,13 @@ function ChallengeModeRecapScene:drawSelf()
   local drawY = 20
 
   local limit = consts.CANVAS_WIDTH
-  local message = "Congratulations!\n You beat " .. self.challengeMode.difficultyName .. "!"
+  local message = loc("challenge_congratulations") .. "\n" .. loc("challenge_beaten", self.challengeMode.difficultyName)
   GraphicsUtil.printf(message, 0, drawY, limit, "center", nil, nil, 30)
   self.uiRoot:draw()
 
   local limit = 400
   drawY = drawY + 120
-  GraphicsUtil.printf("Continues", drawX - limit / 2, drawY, limit, "center", nil, nil, 4)
+  GraphicsUtil.printf(loc("challenge_continues"), drawX - limit / 2, drawY, limit, "center", nil, nil, 4)
   drawY = drawY + 20
   GraphicsUtil.printf(self.challengeMode.run:getContinues(), drawX - limit / 2, drawY, limit, "center", nil, nil, 4)
 

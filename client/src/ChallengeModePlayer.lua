@@ -9,7 +9,6 @@ local ChallengeModePlayerStack = require("client.src.ChallengeModePlayerStack")
 ---@field level integer the current stage within the challenge mode difficulty
 
 ---@class ChallengeModePlayer : MatchParticipant
----@field usedCharacterIds string[] array of character ids that have already been used during the life time of the player
 ---@field settings ChallengeModePlayerSettings
 local ChallengeModePlayer = class(
 function(self, playerNumber)
@@ -19,7 +18,6 @@ function(self, playerNumber)
   self.settings.attackEngineSettings = nil
   self.settings.healthSettings = nil
   self.settings.wantsReady = true
-  self.usedCharacterIds = {}
   self.human = false
 end,
 MatchParticipant)

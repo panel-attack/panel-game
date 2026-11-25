@@ -40,9 +40,7 @@ end
 function ChallengeModeMenu:goToCharacterSelect(difficulty, run)
   self:playValidationSfx()
   GAME.battleRoom = ChallengeMode.create(difficulty, self.save, run)
-  if GAME.battleRoom then
-    GAME.navigationStack:replace(CharacterSelectChallenge({battleRoom = GAME.battleRoom}))
-  end
+  GAME.navigationStack:replace(CharacterSelectChallenge({battleRoom = GAME.battleRoom}))
 end
 
 function ChallengeModeMenu:load(sceneParams)
