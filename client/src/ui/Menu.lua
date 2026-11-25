@@ -15,12 +15,12 @@ local VERTICAL_CLIP = {vertical = true}
 -- Menu is a collection of buttons that stack vertically and supports scrolling and keyboard navigation.
 -- It requires the passed in menu items to have valid widths and adds padding between each. Its height is its
 -- layoutRules' sizing.vertical, fitting all items when that isn't fixed, and the width is the maximum of all buttons.
--- Items that don't fit wholly at the scroll offset are hidden.
+-- Items that don't fit wholly where the menu is scrolled to are hidden.
 ---@class Menu : UiElement
 ---@field equalItemWidths boolean true if every item is stretched to the widest so their boxes line up
----@field yOffset number how far the items are scrolled up
----@field scrollToSelected boolean true from a selection until the next layout scrolls the selected item into view
----@field centerOffset number how far the next layout moved the items down to center them vertically
+---@field scrollToSelected boolean true from a selection made while the layout was out of date until the next layout
+--- scrolls the selected item into view
+---@field centerOffset number how far the items shown are drawn down to center them vertically
 local Menu = class(
   function(self, options)
     ---@class Menu
@@ -28,9 +28,6 @@ local Menu = class(
     self.TYPE = "VerticalScrollingButtonMenu"
 
     self.selectedIndex = 1
-    self.totalHeight = 0
-    self.menuItemYOffsets = {}
-    self.allContentShowing = true
     local heightSizing = self.layoutRules.sizing and self.layoutRules.sizing.vertical
     self.sizeToFit = heightSizing == nil or heightSizing.type == "fit"
     self.equalItemWidths = options.equalItemWidths or false
@@ -65,7 +62,6 @@ local Menu = class(
     -- bogus this should be passed in?
     self.centerVertically = themes[config.theme].centerMenusVertically and not self.sizeToFit
 
-    self.yOffset = 0
     self.centerOffset = 0
     self.scrollToSelected = false
     self.firstActiveIndex = 1
@@ -127,93 +123,107 @@ function Menu:addItemChild(menuItem)
   self:addChild(menuItem)
 end
 
--- Shows the items that fit wholly in the menu at yOffset, from the items' places in the layout before scrolling,
--- and shows an indicator on each side items are cut off
----@return number # the height from the menu's top to the bottom of the last item shown
+-- Shows the items that fit wholly in the menu where it is scrolled to, shows an indicator on each side items are cut
+-- off, and centers the items shown vertically when the theme asks for it
 function Menu:showItemsInView()
   self.upIndicator:setVisibility(false)
   self.downIndicator:setVisibility(false)
-  self.allContentShowing = self.yOffset == 0
   self.firstActiveIndex = nil
   self.lastActiveIndex = nil
-  self.totalHeight = 0
 
   local height = self.layoutRect.height
-  local totalMenuHeight = 0
+  local shownHeight = 0
   local menuFull = false
   for i, menuItem in ipairs(self.menuItems) do
     local rect = menuItem.layoutRect
-    self.menuItemYOffsets[i] = rect.y
     menuItem:setVisibility(false)
-    local realY = rect.y - self.yOffset
-    if realY < 0 then
+    local scrolledY = rect.y + self.scrollY
+    if scrolledY < 0 then
       self.upIndicator:setVisibility(true)
     end
-    if menuFull == false and realY >= 0 then
-      if realY + rect.height <= height + LayoutSolver.FLOAT_TOLERANCE then
+    if menuFull == false and scrolledY >= 0 then
+      if scrolledY + rect.height <= height + LayoutSolver.FLOAT_TOLERANCE then
         if self.firstActiveIndex == nil then
           self.firstActiveIndex = i
         end
         menuItem:setVisibility(true)
       else
-        self.allContentShowing = false
         self.downIndicator:setVisibility(true)
         menuFull = true
       end
     end
     if menuFull == false then
       self.lastActiveIndex = i
-      totalMenuHeight = realY + rect.height
+      shownHeight = scrolledY + rect.height
     end
-    self.totalHeight = rect.y + rect.height
   end
-  return totalMenuHeight
+  self.centerOffset = self.centerVertically and LayoutSolver.toEvenPoints((height - shownHeight) / 2) or 0
 end
 
--- Scrolls the selected item into view, by as little as the menu's height allows
+-- Scrolls the selected item into view, to the item that puts it at the top, or the bottom when it was below
 function Menu:scrollSelectedIntoView()
   local index = self.selectedIndex
   if #self.menuItems == 0 then
     return
   end
-  if self.firstActiveIndex == nil then
-    -- first element that was added on an empty menu
-    self.yOffset = self.menuItemYOffsets[index]
-  elseif self.firstActiveIndex > index then
-    self.yOffset = self.menuItemYOffsets[index]
+  if self.firstActiveIndex == nil or self.firstActiveIndex > index then
+    self:setScroll(0, -self.menuItems[index].layoutRect.y)
   elseif self.lastActiveIndex < index then
     local currentIndex = 1
-    local bottomOfDesiredIndex = self.menuItemYOffsets[index] + self.menuItems[index].layoutRect.height
-    while self.menuItemYOffsets[currentIndex] + self.layoutRect.height + LayoutSolver.FLOAT_TOLERANCE < bottomOfDesiredIndex do
+    local bottomOfDesiredIndex = self.menuItems[index].layoutRect.y + self.menuItems[index].layoutRect.height
+    while self.menuItems[currentIndex].layoutRect.y + self.layoutRect.height + LayoutSolver.FLOAT_TOLERANCE < bottomOfDesiredIndex do
       currentIndex = currentIndex + 1
       if currentIndex >= #self.menuItems then
         break
       end
     end
-    self.yOffset = self.menuItemYOffsets[currentIndex]
+    self:setScroll(0, -self.menuItems[currentIndex].layoutRect.y)
   end
 end
 
--- Scrolls the items by yOffset, after scrolling a newly selected item into view, and centers the items shown vertically
--- when the theme asks for it. Called by the layout once the items are placed unscrolled at their exact places.
----@param axis table LayoutSolver.X_AXIS or LayoutSolver.Y_AXIS
----@return number
-function Menu:getChildOffset(axis)
-  if axis ~= LayoutSolver.Y_AXIS or #self.menuItems == 0 then
-    return 0
+-- Returns how far the menu scrolls: to the first item that, at the top, leaves the last item wholly in the menu
+---@return number maxX
+---@return number maxY
+function Menu:getMaxScroll()
+  local lastItem = self.menuItems[#self.menuItems]
+  if not self.layoutRules.clip or not lastItem then
+    return 0, 0
   end
-  local totalMenuHeight = self:showItemsInView()
+  local contentHeight = lastItem.layoutRect.y + lastItem.layoutRect.height
+  local reach = self.layoutRect.height + LayoutSolver.FLOAT_TOLERANCE
+  if contentHeight <= reach then
+    return 0, 0
+  end
+  for _, menuItem in ipairs(self.menuItems) do
+    if menuItem.layoutRect.y + reach >= contentHeight then
+      return 0, menuItem.layoutRect.y
+    end
+  end
+  return 0, lastItem.layoutRect.y
+end
+
+-- Shows the items in view once the layout placed them, after scrolling to an item selected since the last layout
+---@param width number
+---@param height number
+function Menu:onLayoutSized(width, height)
+  UIElement.onLayoutSized(self, width, height)
+  self:showItemsInView()
   if self.scrollToSelected then
     self.scrollToSelected = false
     self:scrollSelectedIntoView()
-    totalMenuHeight = self:showItemsInView()
   end
-  if self.centerVertically then
-    self.centerOffset = (self.layoutRect.height - totalMenuHeight) / 2
-  else
-    self.centerOffset = 0
-  end
-  return self.centerOffset - self.yOffset
+end
+
+-- Shows the items that fit where the menu was scrolled to
+function Menu:onScrollChanged()
+  self:showItemsInView()
+end
+
+-- The items are drawn and touched where the menu is scrolled to, moved down when they are centered
+---@return number x
+---@return number y
+function Menu:getFlowOffset()
+  return 0, self.centerOffset + self.scrollY
 end
 
 function Menu:addMenuItem(index, menuItem)
@@ -274,7 +284,7 @@ function Menu:removeMenuItem(menuItemId)
 end
 
 -- Updates the selected index of the menu
--- Also has the next layout scroll to show the button if off screen
+-- Also scrolls to show the button if off screen, in the next layout when the layout is out of date
 function Menu:setSelectedIndex(index)
   if index <= 0 then
     index = 1 -- 1 index is the default if no items
@@ -287,8 +297,11 @@ function Menu:setSelectedIndex(index)
   if #self.menuItems > 0 then
     self.menuItems[self.selectedIndex]:setSelected(true)
   end
-  self.scrollToSelected = true
-  self:markLayoutDirty()
+  if self:hasCurrentLayout() then
+    self:scrollSelectedIntoView()
+  else
+    self.scrollToSelected = true
+  end
 end
 
 function Menu:scrollUp()
@@ -346,82 +359,27 @@ function Menu:drawSelf()
 
 end
 
--- Draws the items unclipped, as the ones cut off are hidden, and the indicators moved with the centered items
+-- Moves the selection one item per wheel step, stopping at either end
+---@param dx number sideways wheel movement, which a menu ignores
+---@param dy number wheel movement, positive away from the player
+function Menu:onScroll(dx, dy)
+  local step = dy > 0 and -1 or 1
+  local index = math.max(1, math.min(#self.menuItems, self.selectedIndex + step))
+  if dy ~= 0 and index ~= self.selectedIndex then
+    self:setSelectedIndex(index)
+    self:playMoveSfx()
+  end
+end
+
+-- Draws the items unclipped where the menu is scrolled to, as the ones cut off are hidden, and the indicators moved
+-- with the centered items
 function Menu:drawChildren()
+  local _, flowOffsetY = self:getFlowOffset()
   for _, uiElement in ipairs(self.children) do
-    if uiElement.layoutRules.floating and self.centerOffset ~= 0 then
-      love.graphics.push("transform")
-      love.graphics.translate(0, self.centerOffset)
-      uiElement:draw()
-      love.graphics.pop()
-    else
-      uiElement:draw()
-    end
-  end
-end
-
-function Menu:onTouch(x, y)
-  self.swiping = true
-  self.initialTouchX = x
-  self.initialTouchY = y
-  self.originalY = self.yOffset
-  local realTouchedElement = UIElement.getTouchedElement(self, x, y)
-  if realTouchedElement and realTouchedElement ~= self then
-    self.touchedChild = realTouchedElement
-    self.touchedChild:onTouch(x, y)
-  end
-end
-
-function Menu:onDrag(x, y)
-  if not self.touchedChild or not self.touchedChild.onDrag then
-    local yOffset = y - self.initialTouchY
-    local height = self.layoutRect.height
-    if height < self.totalHeight then
-      if yOffset > 0 then
-        self.yOffset = math.max(self.originalY - yOffset, -50)-- - 2 * NAVIGATION_BUTTON_WIDTH)
-      else
-        self.yOffset = math.min(self.totalHeight - height + 50, self.originalY - yOffset)
-      end
-      self.scrollToSelected = false
-      self:markLayoutDirty()
-    end
-  else
-    self.touchedChild:onDrag(x, y)
-  end
-end
-
-function Menu:onRelease(x, y)
-  if not self.touchedChild or not self.touchedChild.onRelease then
-    self:onDrag(x, y)
-  else
-    if self.yOffset ~= self.originalY then
-      -- we dragged so trigger with the original touch coordinates
-      -- that way the button will only trigger its on-click if it still touches the start coords
-      self.touchedChild:onRelease(self.initialTouchX, self.initialTouchY)
-    else
-      self.touchedChild:onRelease(x, y)
-    end
-  end
-
-  self.swiping = false
-  self.touchedChild = nil
-end
-
--- overwrite the default callback to always return itself
--- while keeping a reference to the really touched element
-function Menu:getTouchedElement(x, y)
-  if self.isVisible and self.isEnabled and self:inBounds(x, y) then
-    if self.allContentShowing then
-      local touchedElement
-      for i = 1, #self.children do
-        touchedElement = self.children[i]:getTouchedElement(x, y)
-        if touchedElement then
-          return touchedElement
-        end
-      end
-    else
-      return self
-    end
+    love.graphics.push("transform")
+    love.graphics.translate(0, uiElement.layoutRules.floating and self.centerOffset or flowOffsetY)
+    uiElement:draw()
+    love.graphics.pop()
   end
 end
 

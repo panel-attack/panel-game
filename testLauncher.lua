@@ -155,6 +155,7 @@ local allTests = {
   "client.tests.DiscreteImageSliderTests",
   "client.tests.ImageContainerTests",
   "client.tests.ScrollContainerTests",
+  "client.tests.TouchHandlerTests",
   "client.tests.InputFieldTests",
   "client.tests.PlayerSettingsTests",
   "client.tests.CharacterSelectSoundTests",

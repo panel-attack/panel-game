@@ -1,5 +1,6 @@
 local ui = require("client.src.ui")
 local Layout = require("client.src.ui.Layout")
+local touchHandler = require("client.src.ui.touchHandler")
 local logger = require("common.lib.logger")
 
 local function box(width, height)
@@ -93,9 +94,8 @@ local function testScrollContainerMovesItsContent()
   local content = box(100, 400)
   container:addChild(content)
   container:layOut()
-  container:onScroll(0, -1)
-  container:layOut()
-  assert(screenY(content) == -ui.ScrollContainer.SCROLL_STEP, "content at " .. screenY(content))
+  container:scrollBy(0, -40)
+  assert(screenY(content) == -40, "content at " .. screenY(content))
   logger.trace("passed test testScrollContainerMovesItsContent")
 end
 
@@ -118,10 +118,30 @@ local function testScrollMenuScrollsToTheSelectedChild()
   end
   menu:layOut()
   menu:select(children[4])
-  menu:layOut()
   local bottom = screenY(children[4]) + children[4].layoutRect.height
   assert(near(bottom, 50), "last child ends at " .. bottom)
   logger.trace("passed test testScrollMenuScrollsToTheSelectedChild")
+end
+
+local function testATouchOnAScrollMenuChildPartlyInViewSelectsItWithoutScrolling()
+  local menu = ui.ScrollMenu({
+    childGap = 0,
+    padding = 0,
+    layoutRules = {sizing = Layout.fixedSize(100, 50), floating = Layout.floatAt("leftTop", 500, 500)}
+  })
+  for _ = 1, 4 do
+    menu:addChild(ui.TextButton({label = ui.Label({text = "x", translate = false}), layoutRules = {sizing = Layout.fixedSize(80, 20)}}))
+  end
+  GAME.uiRoot:addChild(menu)
+  GAME.uiRoot:layOut()
+  -- the third child reaches from 40 to 60, 10 past the menu's end
+  touchHandler:touch(510, 545)
+  local scrolledByTheTouch = menu.scrollY
+  touchHandler:release(0, 0)
+  menu:detach()
+  assert(menu.selectedIndex == 3, "selected child " .. tostring(menu.selectedIndex))
+  assert(scrolledByTheTouch == 0, "the touch scrolled the menu to " .. scrolledByTheTouch)
+  logger.trace("passed test testATouchOnAScrollMenuChildPartlyInViewSelectsItWithoutScrolling")
 end
 
 local function menuItems(count)
@@ -144,7 +164,7 @@ local function testMenuStacksItsItems()
   for i, item in ipairs(items) do
     assert(item.isVisible, "item " .. i .. " of a menu that fits its items is hidden")
   end
-  assert(menu.allContentShowing and not menu.downIndicator.isVisible, "a menu showing all its items marks none cut")
+  assert(not menu.upIndicator.isVisible and not menu.downIndicator.isVisible, "a menu showing all its items marks none cut")
   logger.trace("passed test testMenuStacksItsItems")
 end
 
@@ -189,6 +209,7 @@ testGridPlacesAnElementInItsCells()
 testScrollContainerMovesItsContent()
 testScrollMenuStacksItsChildrenBelowItsPadding()
 testScrollMenuScrollsToTheSelectedChild()
+testATouchOnAScrollMenuChildPartlyInViewSelectsItWithoutScrolling()
 testMenuStacksItsItems()
 testMenuStretchesEveryItemToItsWidth()
 testMenuScrollsTheSelectedItemIntoView()

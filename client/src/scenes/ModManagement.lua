@@ -133,7 +133,7 @@ function ModManagement:load()
     frameImages = themes[config.theme]:getGridCursor(1),
   })
   self.cursor.onMove = function(cursor)
-    self.scrollContainer:keepVisible(-UNIT_SIZE * (cursor.selectedGridPos.y - 1), UNIT_SIZE)
+    self.scrollContainer:scrollAreaIntoView(0, UNIT_SIZE * (cursor.selectedGridPos.y - 1), 0, UNIT_SIZE)
   end
   self.cursor.escapeCallback = function(cursor)
     self:pressBackButton()
@@ -202,7 +202,7 @@ function ModManagement:openTab(tab)
   local hasExtras = tab.getAllMods ~= nil
   self.musicHeader:setVisibility(hasExtras)
   self.subModsHeader:setVisibility(hasExtras)
-  self.scrollContainer:setScrollOffset(0)
+  self.scrollContainer:setScroll(0, 0)
   self:rebuildRows(nil, STATUS_X.shown)
   self.uiRoot:addChild(self.panel)
   self.receiveMode = "Grid"

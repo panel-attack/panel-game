@@ -436,28 +436,7 @@ local function testAnOddFloatingOffsetIsRoundedOntoThePixelGrid()
   logger.trace("passed test testAnOddFloatingOffsetIsRoundedOntoThePixelGrid")
 end
 
--- clipping and scrolling
-
-local function testAPartlyScrolledFlowStaysOnThePixelGrid()
-  local item = node({sizing = Layout.fixedSize(30, 10), childAlignment = Layout.CENTER}, {box(12, 8)})
-  local root = node({layoutDirection = "topToBottom", sizing = Layout.fixedSize(50, 30),
-                     clip = {vertical = true, childOffset = {y = -3.5}}}, {box(20, 10), item})
-  LayoutSolver.solve(root)
-  assertOnThePixelGrid(root, "scrolled")
-  assert(math.abs(item.layoutRect.y - 6.5) <= 1, "the item is at " .. item.layoutRect.y)
-  logger.trace("passed test testAPartlyScrolledFlowStaysOnThePixelGrid")
-end
-
-local function testChildOffsetMovesTheFlowButNotFloatingChildren()
-  local item = box(20, 10)
-  local badge = box(6, 6, {floating = {attachTo = "parent", attachPoints = {element = "rightTop", parent = "rightTop"}}})
-  local root = node({layoutDirection = "topToBottom", sizing = Layout.fixedSize(50, 30), padding = Layout.padding(2),
-                     clip = {vertical = true, childOffset = {y = -12}}}, {box(20, 10), item, badge})
-  LayoutSolver.solve(root)
-  assertRect(item, 2, 0, 20, 10, "item")
-  assertRect(badge, 44, 0, 6, 6, "badge")
-  logger.trace("passed test testChildOffsetMovesTheFlowButNotFloatingChildren")
-end
+-- clipping
 
 local function testClippedContentKeepsItsSizeAlongTheClip()
   local text = textNode({}, 6, 10, 8)
@@ -474,23 +453,6 @@ local function testAGrowingClippedElementTakesTheSpaceItIsGivenNotItsContentsSiz
   LayoutSolver.solve(root)
   assert(list.layoutRect.height == 720, "the clipped element is " .. list.layoutRect.height .. " high")
   logger.trace("passed test testAGrowingClippedElementTakesTheSpaceItIsGivenNotItsContentsSize")
-end
-
-local function testANodeKeepsAChildInViewFromWhereTheFlowPutIt()
-  local target = box(20, 10)
-  local list = node({layoutDirection = "topToBottom", sizing = Layout.fixedSize(50, 20), clip = {vertical = true}},
-                    {box(20, 10), box(20, 10), target})
-  function list:getChildOffset(axis)
-    if axis == LayoutSolver.Y_AXIS then
-      local rect = target.layoutRect
-      return math.min(0, self.layoutRect.height - (rect.y + rect.height))
-    end
-    return 0
-  end
-  LayoutSolver.solve(list)
-  assertRect(target, 0, 10, 20, 10, "the target scrolled to the bottom edge")
-  assertRect(list.children[1], 0, -10, 20, 10, "the first row scrolled above the top edge")
-  logger.trace("passed test testANodeKeepsAChildInViewFromWhereTheFlowPutIt")
 end
 
 testRowFitsTheSumOfItsChildrenPlusGapsAndPadding()
@@ -529,8 +491,5 @@ testFloatingGrowElementTakesTheFullSizeOfWhatItIsPinnedTo()
 testFloatingGrowElementTakesTheSizeOfALaterSibling()
 testSolvingAgainReusesTheRects()
 testAnOddFloatingOffsetIsRoundedOntoThePixelGrid()
-testAPartlyScrolledFlowStaysOnThePixelGrid()
-testChildOffsetMovesTheFlowButNotFloatingChildren()
 testClippedContentKeepsItsSizeAlongTheClip()
 testAGrowingClippedElementTakesTheSpaceItIsGivenNotItsContentsSize()
-testANodeKeepsAChildInViewFromWhereTheFlowPutIt()

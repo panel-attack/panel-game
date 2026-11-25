@@ -23,7 +23,10 @@ local Transition = class(function(transition, startTime, duration)
   -- these are set by the navigationStack
   transition.oldScene = nil
   transition.newScene = nil
-  transition.uiRoot = UiElement({layoutRules = {sizing = Layout.fixedSize(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)}})
+  -- a child of the navigation stack while the transition runs, floating over the roots of its two scenes
+  transition.uiRoot = UiElement({
+    layoutRules = {sizing = Layout.fixedSize(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT), floating = Layout.floatAt("leftTop")}
+  })
 
 end)
 
@@ -41,17 +44,6 @@ end
 
 function Transition:updateScenes(dt)
   -- error("A transition should probably implement an updateScenes function")
-end
-
--- Lays out the transition's ui and both scenes', once a frame between the update and the draw, as it draws them all
-function Transition:layOut()
-  self.uiRoot:layOut()
-  if self.oldScene then
-    self.oldScene:layOut()
-  end
-  if self.newScene then
-    self.newScene:layOut()
-  end
 end
 
 function Transition:draw()

@@ -25,9 +25,10 @@ local Scene = class(
 ---@param self Scene
   function (self, sceneParams)
     sceneParams = sceneParams or {}
-    -- hidden until the navigation stack draws the scene, so a scene loaded before it is pushed is not on screen
+    -- hidden until the navigation stack draws the scene, so a scene loaded before it is pushed is not on screen.
+    -- It floats, as the roots the navigation stack holds during a transition lie over each other.
     self.uiRoot = ui.UiElement({
-      layoutRules = {sizing = Layout.fixedSize(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)},
+      layoutRules = {sizing = Layout.fixedSize(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT), floating = Layout.floatAt("leftTop")},
       isVisible = false
     })
     -- scenes may specify theme music to use that is played once they are switched to
@@ -85,12 +86,12 @@ function Scene:update(dt)
   self.uiRoot:update(dt)
 end
 
--- Lays out the scene's ui, once a frame between the update and the draw while the scene is shown
+-- Lays out the tree the scene's ui is in: the game's while the navigation stack shows the scene, else the scene's own
 function Scene:layOut()
-  self.uiRoot:layOut()
+  self.uiRoot:getRoot():layOut()
 end
 
--- Draws the scene, whose ui whatever shows the scene laid out first
+-- Draws the scene, whose ui the layout of its tree placed first
 function Scene:draw()
   assert(not self.uiRoot.layoutDirty, "a scene is drawn before its ui is laid out")
   self:drawSelf()

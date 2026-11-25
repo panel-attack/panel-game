@@ -102,7 +102,7 @@ end
 
 local function finishTransition()
   GAME.navigationStack:updateSelf(1 / 60)
-  GAME.navigationStack:layOutScenes()
+  GAME.navigationStack:layOut()
   return GAME.navigationStack:getActiveScene()
 end
 

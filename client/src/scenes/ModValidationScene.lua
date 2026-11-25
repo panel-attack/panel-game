@@ -29,8 +29,6 @@ function(self, sceneParams)
   local modWarningLabel = ui.Label({text = text, translate = false})
   self.scrollContainer:addChild(modWarningLabel)
   self.uiRoot:addChild(self.scrollContainer)
-
-  self.offset = 0
 end,
 Scene)
 
@@ -39,27 +37,24 @@ ModValidationScene.name = "ModValidationScene"
 function ModValidationScene:updateSelf(dt)
   if inputs:isPressedWithRepeat("MenuUp", .25, 0.03) then
     self:playMoveSfx()
-    self.offset = self.offset + SCROLL_STEP
+    self.scrollContainer:scrollBy(0, SCROLL_STEP)
   end
   if inputs:isPressedWithRepeat("MenuDown", .25, 0.03) then
     self:playMoveSfx()
-    self.offset = self.offset - SCROLL_STEP
+    self.scrollContainer:scrollBy(0, -SCROLL_STEP)
   end
   if inputs.isDown.MenuLeft then
     self:playMoveSfx()
-    self.offset = self.offset + self.scrollContainer.layoutRect.height - SCROLL_STEP
+    self.scrollContainer:scrollBy(0, self.scrollContainer.layoutRect.height - SCROLL_STEP)
   end
   if inputs.isDown.MenuRight then
     self:playMoveSfx()
-    self.offset = self.offset - self.scrollContainer.layoutRect.height + SCROLL_STEP
+    self.scrollContainer:scrollBy(0, SCROLL_STEP - self.scrollContainer.layoutRect.height)
   end
   if inputs.isDown["MenuEsc"] then
     self:playValidationSfx()
     GAME.navigationStack:pop()
   end
-
-  self.scrollContainer:setScrollOffset(self.offset)
-  self.offset = self.scrollContainer.scrollOffset
 end
 
 function ModValidationScene:drawSelf()

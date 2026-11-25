@@ -6,8 +6,7 @@ local consts = require("common.engine.consts")
 local Layout = require("client.src.ui.Layout")
 
 -- Shows notifications in MAX_SHOWN places stacked downward from the top right of the canvas, above every scene.
--- Game puts it in uiRoot after the navigation stack, so it is drawn over the scenes and lasts across scene changes;
--- it never takes touches or input.
+-- Game puts it in uiRoot after the navigation stack, so it is drawn over the scenes and lasts across scene changes.
 -- A notification keeps its place until it has slid out; the rest wait their turn and slide into the places freed.
 -- Each notification floats at the top right, a gap under the notification in the place above it, so it follows that
 -- one's height; once that one leaves, it is pinned where the last layout put it.
@@ -159,14 +158,6 @@ function NotificationCenter:removeFinished()
   while #self.notifications < NotificationCenter.MAX_SHOWN and #self.waiting > 0 do
     self:showNow(table.remove(self.waiting, 1))
   end
-end
-
--- Never takes a touch, so a touch on a notification reaches the scene under it
----@param x number screen x coordinate of the touch
----@param y number screen y coordinate of the touch
----@return nil
-function NotificationCenter:getTouchedElement(x, y)
-  return nil
 end
 
 -- Never hands a notification input, so showing one never takes it from the scene
