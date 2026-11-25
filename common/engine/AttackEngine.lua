@@ -116,9 +116,7 @@ function AttackEngine.addEndChainPattern(self, chainEnd)
   self.attackPatterns[#self.attackPatterns + 1] = attackPattern
 end
 
-local garbageList = {}
 function AttackEngine.run(self)
-  table.clear(garbageList)
   self.chainSizeSent = 0
   table.clear(self.comboWidthsSent)
   self.metalPiecesSent = 0
@@ -155,7 +153,6 @@ function AttackEngine.run(self)
               -- we need a coordinate for the origin of the attack animation
               garbage.rowEarned = math.random(1, 11)
               garbage.colEarned = math.random(1, 6)
-              maxCombo = garbage.width + 1
               -- if the attack engine garbage is pushed by ref, the garbage queue would modify the reference
               -- which could also alter the chain flag in case of fake chains
               -- so make sure to deepcpy combos before sending

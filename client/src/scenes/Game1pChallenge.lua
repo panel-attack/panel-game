@@ -7,7 +7,6 @@ local ChallengeModeRecapScene = require("client.src.scenes.ChallengeModeRecapSce
 
 -- Scene for one battle in a challenge mode game
 local Game1pChallenge = class(function(self, sceneParams)
-  self.totalTimeQuads = {}
   self.stageIndex = GAME.battleRoom.run.stageIndex
   self.timeSplitElement = ChallengeModeTimeSplitsUIElement({x = consts.CANVAS_WIDTH / 2, y = 280}, GAME.battleRoom, self.stageIndex)
   self.uiRoot:addChild(self.timeSplitElement)
