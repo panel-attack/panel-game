@@ -7,9 +7,6 @@ local DebugSettings = require("client.src.debug.DebugSettings")
 ---@field engine SimulatedStack
 ---@field enableSfx boolean
 ---@field multiBarFrameCount integer
----@field sfxCombo integer
----@field sfxChain integer
----@field sfxMetal integer
 ---@field difficultyQuads love.Quad[]
 ---@field stackHeightQuad love.Quad
 ---@field player ChallengeModePlayer?
@@ -22,8 +19,7 @@ local ChallengeModePlayerStack = class(
 function(self, args)
   self.player = args.player
   assert(self.engine.TYPE == "SimulatedStack")
-  self.engine.outgoingGarbage:connectSignal("garbagePushed", self, self.onGarbagePushed)
-  self.engine.outgoingGarbage:connectSignal("newChainLink", self, self.onNewChainLink)
+  self.engine.attackEngine:connectSignal("attackSent", self, self.queueAttackSoundEffect)
   self.engine.outgoingGarbage:connectSignal("chainEnded", self, self.onChainEnded)
   self.engine:connectSignal("gameOver", self, self.onGameOver)
   self.engine:connectSignal("finishedRun", self, self.onRun)
@@ -35,36 +31,12 @@ function(self, args)
 
   self.multiBarFrameCount = 240
 
-  self.sfxCombo = 0
-  self.sfxChain = 0
-  self.sfxMetal = 0
-
   self.difficultyQuads = {}
 end,
 ClientStack)
 
 function ChallengeModePlayerStack:onGameOver()
   SoundController:playSfx(themes[config.theme].sounds.game_over)
-end
-
-function ChallengeModePlayerStack:onGarbagePushed(garbage)
-  -- TODO: Handle combos SFX greather than 7
-  self.sfxCombo = garbage.width + 1
-  if self.sfxChain == 0 then
-    self.sfxChain = garbage.height + 1
-  end
-
-  if garbage.isMetal then
-    if self.sfxMetal == 0 then
-      self.sfxMetal = 3
-    else
-      self.sfxMetal = self.sfxMetal + 1
-    end
-  end
-end
-
-function ChallengeModePlayerStack:onNewChainLink(chainGarbage)
-  self.sfxChain = #chainGarbage.linkTimes + 1
 end
 
 function ChallengeModePlayerStack:onChainEnded(chainGarbage)
@@ -84,15 +56,8 @@ end
 
 function ChallengeModePlayerStack:onRun()
   if self:canPlaySfx() then
-    local newComboChainInfo = self.attackSoundInfoForMatch(self.sfxChain > 0, self.sfxChain, self.sfxCombo, self.sfxMetal)
-    if newComboChainInfo then
-      self.character:playAttackSfx(newComboChainInfo)
-    end
+    self:playQueuedAttackSound()
   end
-
-  self.sfxCombo = 0
-  self.sfxChain = 0
-  self.sfxMetal = 0
 
   if self.engine.healthEngine then
     if self.danger_music then
