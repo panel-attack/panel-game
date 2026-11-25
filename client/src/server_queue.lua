@@ -101,31 +101,46 @@ function ServerQueue.pop_next_with(self, ...)
   end
 end
 
--- Pop all messages where any of the keys in their dictionary match the specified keys
-function ServerQueue.pop_all_with(self, ...)
-  local ret = {}
-
-  if self.first <= self.last then
-    local still_empty = true
-    for i = self.first, self.last do
-      local msg = self.data[i]
-      if msg ~= nil then
-        still_empty = false
-        for j = 1, select("#", ...) do
-          if msg[select(j, ...)] ~= nil then
-            --print("POP "..select(j, ...))
-            ret[#ret + 1] = msg
-            self:remove(i)
-            break
-          end
-        end
-      elseif still_empty then
-        self.first = self.first + 1
-        self.empties = self.empties - 1
-      end
+-- The first message after index that is still in the queue, as its index and the message
+---@param queue ServerQueue
+---@param index integer
+---@return integer?
+---@return table?
+local function nextMessage(queue, index)
+  while index < queue.last do
+    index = index + 1
+    local message = queue.data[index]
+    if message ~= nil then
+      return index, message
     end
   end
-  return ret
+end
+
+-- Moves the messages down over the holes remove left, keeping their order
+function ServerQueue:closeHoles()
+  local target = self.first
+  for index = self.first, self.last do
+    local message = self.data[index]
+    if message ~= nil then
+      self.data[index] = nil
+      self.data[target] = message
+      target = target + 1
+    end
+  end
+  self.last = target - 1
+  self.empties = 0
+end
+
+-- Iterates the messages from oldest to newest as index, message. The current message may be taken out with remove.
+-- The holes earlier walks left are closed first, so a message kept at the head doesn't make every walk step over them.
+---@return fun(queue: ServerQueue, index: integer): integer?, table?
+---@return ServerQueue
+---@return integer
+function ServerQueue:getMessageIterator()
+  if self.empties > 0 then
+    self:closeHoles()
+  end
+  return nextMessage, self, self.first - 1
 end
 
 function ServerQueue.remove(self, index)

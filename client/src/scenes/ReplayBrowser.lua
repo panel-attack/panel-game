@@ -53,7 +53,6 @@ function ReplayBrowser.createFromReplayFile(file)
   if not success then
     local filename = file:getFilename()
     logger.warn("Could not load replay " .. filename .. ": " .. tostring(replay))
-    GAME.theme:playCancelSfx()
     return nil
   end
   return replay
@@ -123,12 +122,14 @@ local function selectMenuItem(browser)
         local file, openError = fileUtils.openFile(selection, "r")
         if not file then
           logger.warn("Could not open replay " .. selection .. ": " .. tostring(openError))
-          GAME.theme:playCancelSfx()
+          browser:playCancelSfx()
           return false
         end
         local replay = ReplayBrowser.createFromReplayFile(file)
         if replay then
           browser:showReplay(replay, selection)
+        else
+          browser:playCancelSfx()
         end
         return not not replay
       elseif file_info.type == "directory" then
@@ -168,7 +169,7 @@ end
 ---@return boolean started
 function ReplayBrowser:playReplay()
   if not ReplayV3.replayCanBeViewed(selectedReplay) then
-    GAME.theme:playCancelSfx()
+    self:playCancelSfx()
     return false
   end
 
@@ -178,7 +179,7 @@ function ReplayBrowser:playReplay()
   match:start()
   local scene = ReplayGame({match = match})
 
-  GAME.theme:playValidationSfx()
+  self:playValidationSfx()
   SoundController:stopMusic()
   GAME.navigationStack:push(scene)
   return true
@@ -187,32 +188,32 @@ end
 function ReplayBrowser:update()
   if state == "browser" then
     if input.isDown["MenuEsc"] then
-      GAME.theme:playCancelSfx()
+      self:playCancelSfx()
       GAME.navigationStack:pop()
     end
     if input.isDown["MenuSelect"] then
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
       selectMenuItem(self)
     end
     if input.isDown["MenuBack"] then
       if current_path == "/" then
-        GAME.theme:playCancelSfx()
+        self:playCancelSfx()
       else
-        GAME.theme:playValidationSfx()
+        self:playValidationSfx()
         setPathToParentDir()
       end
     end
     if input:isPressedWithRepeat("MenuUp") then
-      GAME.theme:playMoveSfx()
+      self:playMoveSfx()
       moveCursor(-1)
     end
     if input:isPressedWithRepeat("MenuDown") then
-      GAME.theme:playMoveSfx()
+      self:playMoveSfx()
       moveCursor(1)
     end
   elseif state == "info" then
     if input.isDown["MenuEsc"] or input.isDown["MenuBack"] then
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
       state = "browser"
     end
     if input.isDown["MenuSelect"] then

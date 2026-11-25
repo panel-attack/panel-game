@@ -328,6 +328,7 @@ local function testSinglePlayer()
   assert(message.type == "leaveRoom")
   message = alice.connection.outgoingMessageQueue:pop().messageText
   assert(message.type == "lobbyStateV2")
+  assert(server.spectatorToRoom[alice] == nil, "a spectator who left should no longer be tracked as watching the room")
 
   alice.connection:receiveMessage(json.encode(ClientProtocol.requestSpectate("Alice", server.playerToRoom[bob].roomNumber).messageText))
   server:update()

@@ -39,7 +39,7 @@ function WindowSizeTester:load()
   local dWidth, dHeight = love.window.getDesktopDimensions(config.display)
   local width, height, flags = love.window.getMode()
   local x, y, displayIndex = love.window.getPosition()
-  local desktopSizeLabel = ui.Label({text = "Desktop size: " .. dWidth .. "x" .. dHeight})
+  local desktopSizeLabel = ui.Label({text = "Desktop size: " .. dWidth .. "x" .. dHeight, translate = false})
   local maximizedLabel = ui.ValueLabel({valueFunction = function() return "Maximized: " .. tostring(love.window.isMaximized()) end})
   self.uiRoot.fullscreenSelection = ui.ButtonGroup({
     buttons = {
@@ -49,7 +49,7 @@ function WindowSizeTester:load()
     values = {false, true},
     selectedIndex = flags.fullscreen and 2 or 1,
     onChange = function(group, value)
-      GAME.theme:playMoveSfx()
+      self:playMoveSfx()
       love.window.setFullscreen(value)
     end
   })

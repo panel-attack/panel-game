@@ -111,7 +111,7 @@ local function load_panel_img(path, name, expectedWidth, expectedHeight)
     img = GraphicsUtil.loadImageFromSupportedExtensions("client/assets/panels/__default/" .. name, expectedWidth, expectedHeight)
 
     if not img then
-      error("Could not find default panel image")
+      error("Could not find panel image " .. path .. "/" .. name .. " or a default for it")
     end
   end
 
@@ -318,6 +318,20 @@ function Panels:load()
     )
     --GraphicsUtil.readbackTexture(self.sheets[color]):encode("png", self.path .. "/panel-" .. color .. ".png")
     self.batches[color] = love.graphics.newSpriteBatch(self.sheets[color], 100, "stream")
+  end
+end
+
+-- Frees the sprite sheets and the sprite batches drawing them right away instead of whenever the garbage collector gets to them.
+-- Only this panel set holds them; everything else draws through it, so it can't draw after this.
+-- The display icons and single images stay, UI elements keep those.
+function Panels:releaseSheets()
+  for color, batch in pairs(self.batches) do
+    batch:release()
+    self.batches[color] = nil
+  end
+  for color, sheet in pairs(self.sheets) do
+    sheet:release()
+    self.sheets[color] = nil
   end
 end
 

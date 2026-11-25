@@ -577,6 +577,11 @@ function BattleRoom:onMatchEnded(match)
     -- other aborts come via network and are directly handled in response to the network message (or lack thereof)
   end
 
+  self:endMatch()
+end
+
+-- Lets go of the room's match and returns the room to character select
+function BattleRoom:endMatch()
   -- nilling the match here doesn't keep the game scene from rendering it as the scene has its own reference
   self.match = nil
   self.state = BattleRoom.states.Setup

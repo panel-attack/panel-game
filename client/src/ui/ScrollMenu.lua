@@ -46,7 +46,7 @@ function ScrollMenu:selectPrevious()
     end
   end
   self:keepVisible(-child.y, child.height)
-  GAME.theme:playMoveSfx()
+  self:playMoveSfx()
 end
 
 function ScrollMenu:selectNext()
@@ -64,7 +64,7 @@ function ScrollMenu:selectNext()
     end
   end
   self:keepVisible(-child.y, child.height)
-  GAME.theme:playMoveSfx()
+  self:playMoveSfx()
 end
 
 function ScrollMenu:selectLast()
@@ -113,7 +113,7 @@ function ScrollMenu:receiveInputsSelf(inputSource, dt)
   if inputs.isDown["MenuEsc"] then
     if self:getLastIndex() ~= self.selectedIndex then
       self:selectLast()
-      GAME.theme:playCancelSfx()
+      self:playCancelSfx()
     else
       selectedElement:receiveInputs(inputSource, dt)
     end

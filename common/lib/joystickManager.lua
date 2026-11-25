@@ -13,6 +13,8 @@ local joystickManager = {
   guidsToJoysticks = {},
   -- mapping of joystick ID to a joystick information containing recorded default axis whether the joystick is a gamepad and a reference to the joystick itself
   devices = {},
+  -- set of joystick IDs that have already logged a hat direction LOVE doesn't know, so each controller logs it once
+  joystickIdsWithUnknownHatLogged = {},
 }
 
 -- list of (directions, axis) pairs for the 8 cardinal directions
@@ -91,22 +93,38 @@ end
 -- end
 
 -- maps dpad dir to buttons
+-- a hat direction LOVE doesn't know reads as centered: getHat returns "" for an SDL hat value outside its nine constants,
+-- which SDL's HIDAPI Switch driver produces when the d-pad reports opposite directions together
 ---@param joystick love.Joystick
 function joystickManager:getDPadState(joystick, hatIndex)
   local dir = joystick:getHat(hatIndex)
   local activeButtons = joystickHatToDirs[dir]
-  if activeButtons then
-    return {
-      [joystickManager:getJoystickButtonName(joystick, "up"..hatIndex)] = tableUtils.contains(activeButtons, "up"),
-      [joystickManager:getJoystickButtonName(joystick, "down"..hatIndex)] = tableUtils.contains(activeButtons, "down"),
-      [joystickManager:getJoystickButtonName(joystick, "left"..hatIndex)] = tableUtils.contains(activeButtons, "left"),
-      [joystickManager:getJoystickButtonName(joystick, "right"..hatIndex)] = tableUtils.contains(activeButtons, "right")
-    }
-  else
-    local joystickType = joystick:isGamepad() and "gamepad" or "joystick"
-    error("joystick:getHat returned invalid direction for " .. joystickType .. " " .. joystick:getName() .. " " .. joystick:getGUID() .. " upon querying hatIndex " .. hatIndex
-        .. "\nGot " .. dir .. ", expected love.JoystickHat constant (c, d, l, ld, lu, r, rd, ru or d)")
+  if not activeButtons then
+    joystickManager:logUnknownHatDirectionOnce(joystick, hatIndex, dir)
+    activeButtons = joystickHatToDirs.c
   end
+  return {
+    [joystickManager:getJoystickButtonName(joystick, "up"..hatIndex)] = tableUtils.contains(activeButtons, "up"),
+    [joystickManager:getJoystickButtonName(joystick, "down"..hatIndex)] = tableUtils.contains(activeButtons, "down"),
+    [joystickManager:getJoystickButtonName(joystick, "left"..hatIndex)] = tableUtils.contains(activeButtons, "left"),
+    [joystickManager:getJoystickButtonName(joystick, "right"..hatIndex)] = tableUtils.contains(activeButtons, "right")
+  }
+end
+
+-- warns about a hat direction LOVE doesn't know, the first time a controller reports one
+---@param joystick love.Joystick
+---@param hatIndex integer
+---@param dir string the value getHat returned
+function joystickManager:logUnknownHatDirectionOnce(joystick, hatIndex, dir)
+  local id = joystick:getID()
+  if joystickManager.joystickIdsWithUnknownHatLogged[id] then
+    return
+  end
+  joystickManager.joystickIdsWithUnknownHatLogged[id] = true
+  local joystickType = joystick:isGamepad() and "gamepad" or "joystick"
+  logger.warn("joystick:getHat returned invalid direction for " .. joystickType .. " " .. joystick:getName() .. " " .. joystick:getGUID()
+      .. " upon querying hatIndex " .. hatIndex .. "\nGot \"" .. dir .. "\", expected love.JoystickHat constant (c, d, l, ld, lu, r, rd, ru or u)"
+      .. "\nTreating it as centered; later invalid directions from this controller are not logged")
 end
 
 ---@param joystick love.Joystick
@@ -178,6 +196,15 @@ function joystickManager:registerJoystick(joystick)
   end
 
   joystickManager.devices[id] = device
+end
+
+-- Registers a joystick that no joystickadded event has registered yet; in rare cases that event is not sent,
+-- or arrives after the joystick's first input
+---@param joystick love.Joystick
+function joystickManager:registerJoystickIfMissing(joystick)
+  if not joystickManager:isRegistered(joystick) then
+    joystickManager:registerJoystick(joystick)
+  end
 end
 
 ---@param joystick love.Joystick

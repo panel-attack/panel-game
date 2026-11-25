@@ -74,10 +74,17 @@ function PuzzleMenu:setupPuzzleSetForStartGame(puzzleSet, puzzleSetIterator)
   end
 end
 
+-- Starts a puzzle session playing the puzzles puzzleSetIterator gives, unless a start is already waiting for the match to load
+---@param puzzleSet PuzzleSet
+---@param puzzleSetIterator PuzzleSetIterator a new iterator that has not given a puzzle yet
 function PuzzleMenu:startGame(puzzleSet, puzzleSetIterator)
   assert(puzzleSetIterator)
 
   local player = self.battleRoom.players[1]
+  -- the menu keeps taking input while the match loads, so a second press lands here before the first one's match starts
+  if player.settings.wantsReady then
+    return
+  end
   assert(player.inputConfiguration, "Player must have an input configuration assigned before starting puzzle game")
 
   GAME.localPlayer:setLevel(config.puzzle_level)
@@ -99,11 +106,11 @@ function PuzzleMenu:startGame(puzzleSet, puzzleSetIterator)
 
   self:setupPuzzleSetForStartGame(puzzleSet, puzzleSetIterator)
   player:setWantsReady(true)
-  GAME.theme:playValidationSfx()
+  self:playValidationSfx()
 end
 
 function PuzzleMenu:exit()
-  GAME.theme:playValidationSfx()
+  self:playValidationSfx()
   self.battleRoom:shutdown()
   GAME.navigationStack:pop()
 end
@@ -137,7 +144,7 @@ function PuzzleMenu:load(sceneParams)
       tickLength = tickLength,
       value = config.puzzle_level or 5,
       onValueChange = function(s)
-        GAME.theme:playMoveSfx()
+        self:playMoveSfx()
         config.puzzle_level = s.value
       end
     })
@@ -151,7 +158,7 @@ function PuzzleMenu:load(sceneParams)
       values = {false, true},
       selectedIndex = config.puzzle_randomColors and 2 or 1,
       onChange = function(group, value)
-        GAME.theme:playMoveSfx()
+        self:playMoveSfx()
         config.puzzle_randomColors = value
       end
     }
@@ -298,7 +305,7 @@ function PuzzleMenu:loadMenu()
       vAlign = "center"
     }),
     onClick = function()
-      GAME.theme:playCancelSfx()
+      self:playCancelSfx()
       if self:currentlyAtRootLevel() then
         self:exit()
       else
@@ -424,7 +431,7 @@ function PuzzleMenu:createEditPuzzleButton(puzzleSet, index)
     outlineColor = {0, 0, 0, 0},
     onClick = function()
       self:openPuzzleEditor(puzzleSet, index)
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
     end
   })
   
@@ -500,10 +507,8 @@ function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, puzzleSetIndices, index)
     assert(puzzle)
   end
   
-  -- Create a puzzle set iterator for the current puzzle set
-  local puzzleSetIterator = PuzzleSetIterator.makePuzzleSetIterator(puzzleSet, puzzleSetIndices, index)
-  assert(puzzleSetIterator:totalPuzzleCount() > 0)
-  
+  assert(PuzzleSetIterator.makePuzzleSetIterator(puzzleSet, puzzleSetIndices, index):totalPuzzleCount() > 0)
+
   -- Create the main text button
   local textButton = ui.TextButton({
     label = ui.Label({
@@ -513,7 +518,7 @@ function PuzzleMenu:menuItemToPlayPuzzleSet(puzzleSet, puzzleSetIndices, index)
       vAlign = "center"
     }),
     onClick = function()
-      self:startGame(puzzleSet, puzzleSetIterator)
+      self:startGame(puzzleSet, PuzzleSetIterator.makePuzzleSetIterator(puzzleSet, puzzleSetIndices, index))
     end,
     width = self.levelSliderMenuItem.width
   })
@@ -580,7 +585,7 @@ function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet, puzzleSetIndices, index)
       vAlign = "center"
     }),
     onClick = function() 
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
       -- Save current selected index before navigating
       if self.menu and self.menu.selectedIndex <= #self.menu.menuItems then
         self.selectedIndexStack[#self.selectedIndexStack+1] = self.menu.selectedIndex
@@ -636,9 +641,7 @@ function PuzzleMenu:menuItemToViewPuzzleSet(puzzleSet, puzzleSetIndices, index)
 end
 
 function PuzzleMenu:menuItemToTrainWithIterator(puzzleSetIndices)
-  -- Get the training puzzle count by temporarily getting the first puzzle
-  local trainingPuzzleSetIterator = PuzzleSetIterator.makeTrainingOrderIterator(self.rootPuzzleSet, puzzleSetIndices, self.puzzleLibrary)
-  local puzzleCount = trainingPuzzleSetIterator:totalPuzzleCount()
+  local puzzleCount = PuzzleSetIterator.makeTrainingOrderIterator(self.rootPuzzleSet, puzzleSetIndices, self.puzzleLibrary):totalPuzzleCount()
   
   if puzzleCount == 0 then
     return nil
@@ -653,8 +656,8 @@ function PuzzleMenu:menuItemToTrainWithIterator(puzzleSetIndices)
       hAlign = "center",
       vAlign = "center"
     }),
-    onClick = function() 
-      self:startGame(self.rootPuzzleSet, trainingPuzzleSetIterator)
+    onClick = function()
+      self:startGame(self.rootPuzzleSet, PuzzleSetIterator.makeTrainingOrderIterator(self.rootPuzzleSet, puzzleSetIndices, self.puzzleLibrary))
     end,
     width = self.levelSliderMenuItem.width
   })

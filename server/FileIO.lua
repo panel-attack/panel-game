@@ -18,7 +18,8 @@ function FileIO.makeDirectory(path)
 end
 
 function FileIO.makeDirectoryRecursive(path)
-  local sep, pStr = package.config:sub(1, 1), ""
+  -- an absolute path keeps its leading separator so it isn't made relative to the working directory
+  local pStr = path:sub(1, 1) == sep and sep or ""
   for dir in path:gmatch("[^" .. sep .. "]+") do
     pStr = pStr .. dir .. sep
     FileIO.makeDirectory(pStr)
@@ -81,18 +82,55 @@ function FileIO.logGameResult(player1ID, player2ID, player1Won, rankedValue)
   end
 end
 
-function FileIO.write_error_report(error_report_json)
+-- The path for a new report file named nameStem; reports arriving in the same second get "-2", "-3"... so none overwrites another
+---@param directory string
+---@param nameStem string the file name without its extension
+---@return string
+function FileIO.unusedErrorReportPath(directory, nameStem)
+  local path = directory .. sep .. nameStem .. ".json"
+  local copyNumber = 1
+  while FileIO.fileExists(path) do
+    copyNumber = copyNumber + 1
+    path = directory .. sep .. nameStem .. "-" .. copyNumber .. ".json"
+  end
+  return path
+end
+
+local REPORT_FILE_NAME_FIELD_LENGTH_LIMIT = 16
+
+-- A field the client sent, made safe for a report's file name: only letters, digits and "_", the characters player names
+-- and engine versions use. Anything else, such as a separator, ".." or a NUL that would end the path early, becomes "_".
+---@param value any
+---@param default string used when the field is missing or isn't text
+---@return string
+function FileIO.errorReportFileNameField(value, default)
+  if type(value) ~= "string" and type(value) ~= "number" then
+    return default
+  end
+  local field = tostring(value):sub(1, REPORT_FILE_NAME_FIELD_LENGTH_LIMIT):gsub("[^%w_]", "_")
+  if field == "" then
+    return default
+  end
+  return field
+end
+
+---@param error_report_json table the report the client sent
+---@param directory string the folder the report file goes in
+---@param timestamp integer when the report arrived, which names the file
+---@return boolean # false if the report was too large or couldn't be written
+function FileIO.write_error_report(error_report_json, directory, timestamp)
   local json_string = json.encode(error_report_json)
   if json_string:len() >= 5000 --[[5kB]] then
     return false
   end
-  local sep = package.config:sub(1, 1)
-  local now = os.date("*t", to_UTC(os.time()))
-  local filename = "v" .. (error_report_json.engine_version or "000") .. "-" .. string.format("%04d-%02d-%02d-%02d-%02d-%02d", now.year, now.month, now.day, now.hour, now.min, now.sec) .. "_" .. (error_report_json.name or "Unknown") .. "-ErrorReport.json"
+  local now = os.date("*t", to_UTC(timestamp))
+  local engineVersion = FileIO.errorReportFileNameField(error_report_json.engine_version, "000")
+  local playerName = FileIO.errorReportFileNameField(error_report_json.name, "Unknown")
+  local nameStem = "v" .. engineVersion .. "-" .. string.format("%04d-%02d-%02d-%02d-%02d-%02d", now.year, now.month, now.day, now.hour, now.min, now.sec) .. "_" .. playerName .. "-ErrorReport"
   return pcall(
     function()
-      FileIO.makeDirectoryRecursive("." .. sep .. "reports")
-      local f = assert(io.open("reports" .. sep .. filename, "w"))
+      FileIO.makeDirectoryRecursive(directory)
+      local f = assert(io.open(FileIO.unusedErrorReportPath(directory, nameStem), "w"))
       io.output(f)
       io.write(json_string)
       io.close(f)

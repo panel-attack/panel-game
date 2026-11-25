@@ -248,12 +248,12 @@ end
 
 function Menu:scrollUp()
   self:setSelectedIndex(wrap(1, self.selectedIndex - 1, #self.menuItems))
-  GAME.theme:playMoveSfx()
+  self:playMoveSfx()
 end
 
 function Menu:scrollDown()
   self:setSelectedIndex(wrap(1, self.selectedIndex + 1, #self.menuItems))
-  GAME.theme:playMoveSfx()
+  self:playMoveSfx()
 end
 
 ---@param inputSource InputSource
@@ -275,7 +275,7 @@ function Menu:receiveInputsSelf(inputSource, dt)
     if self.supportsBackButton then
       if self.selectedIndex ~= #self.menuItems then
         self:setSelectedIndex(#self.menuItems)
-        GAME.theme:playCancelSfx()
+        self:playCancelSfx()
       else
         selectedElement:receiveInputs(inputSource, dt)
       end

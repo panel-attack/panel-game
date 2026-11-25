@@ -29,8 +29,8 @@ local ChallengeModeMenu = class(
 
 ChallengeModeMenu.name = "ChallengeModeMenu"
 
-local function exitMenu()
-  GAME.theme:playCancelSfx()
+local function exitMenu(backButton)
+  backButton:playCancelSfx()
   GAME.navigationStack:pop()
 end
 
@@ -38,7 +38,7 @@ end
 ---@param difficulty integer
 ---@param run ChallengeRun?
 function ChallengeModeMenu:goToCharacterSelect(difficulty, run)
-  GAME.theme:playValidationSfx()
+  self:playValidationSfx()
   GAME.battleRoom = ChallengeMode.create(difficulty, self.save, run)
   if GAME.battleRoom then
     GAME.navigationStack:replace(CharacterSelectChallenge({battleRoom = GAME.battleRoom}))
@@ -60,7 +60,7 @@ function ChallengeModeMenu:load(sceneParams)
       width = 70,
       height = 25,
       onChange = function(value)
-        GAME.theme:playMoveSfx()
+        self:playMoveSfx()
         self:showDifficulty(value)
       end
     }
@@ -108,7 +108,7 @@ end
 -- Asks the player to confirm that starting a new game throws away the difficulty's unfinished run
 ---@param difficulty integer
 function ChallengeModeMenu:warnBeforeDiscarding(difficulty)
-  GAME.theme:playValidationSfx()
+  self:playValidationSfx()
   self.discardWarning:setVisibility(true)
   self.menu:setMenuItems({
     ui.MenuItem.createButtonMenuItem("challenge_discard_run_confirm", nil, nil, function()
@@ -116,7 +116,7 @@ function ChallengeModeMenu:warnBeforeDiscarding(difficulty)
       self:goToCharacterSelect(difficulty)
     end),
     ui.MenuItem.createButtonMenuItem("back", nil, nil, function()
-      GAME.theme:playCancelSfx()
+      self:playCancelSfx()
       self:showDifficulty(difficulty)
     end),
   })

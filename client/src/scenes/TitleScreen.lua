@@ -55,7 +55,7 @@ function TitleScreen:update(dt)
   end
   local keyPressed = tableUtils.trueForAny(input.allKeys.isDown, function(key) return key end)
   if love.mouse.isDown(1, 2, 3) or #love.touch.getTouches() > 0 or keyPressed then
-    GAME.theme:playValidationSfx()
+    self:playValidationSfx()
     -- a direction held from here would otherwise keep scrolling the main menu
     input:ignoreHeldKeysUntilReleased()
     GAME.navigationStack:replace(MainMenu())
