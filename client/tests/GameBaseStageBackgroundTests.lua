@@ -1,5 +1,5 @@
 local GameBase = require("client.src.scenes.GameBase")
-local Flux = require("client.lib.flux.flux")
+local Animator = require("client.src.graphics.Animator")
 local Stage = require("client.src.mods.Stage")
 
 local TEST_DATA = "client/tests/StageBackgroundTestData/"
@@ -7,7 +7,7 @@ local TEST_DATA = "client/tests/StageBackgroundTestData/"
 -- Returns a game scene playing on the stage in the given test folder, without the match the scene would load it for
 local function gameOnStage(folderName)
   local path = TEST_DATA .. folderName
-  local game = setmetatable({tweens = Flux.group()}, {__index = GameBase})
+  local game = setmetatable({animator = Animator()}, {__index = GameBase})
   game.stage = Stage(path, folderName)
   game.stage.images.background = love.graphics.newImage(path .. "/background.png")
   game:loadStageBackground()

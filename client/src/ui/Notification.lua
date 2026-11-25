@@ -30,7 +30,7 @@ local RIM_COLOR = {0, 0.404, 0.424}
 ---@field label Label
 ---@field holdSeconds number how long the notification stays in place
 ---@field slideOffset number pixels the notification is drawn right of its place, 0 while it holds
----@field pendingSlide {group: table, delay: number, margin: number}? the slide start asked for, run once a layout has sized the card
+---@field pendingSlide {animator: Animator, delay: number, margin: number}? the slide start asked for, run once a layout has sized the card
 ---@field finished boolean true once it has left
 ---@overload fun(options: NotificationOptions): Notification
 local Notification = class(
@@ -70,11 +70,11 @@ end
 
 -- Slides the notification in from out of sight after delay seconds, holds it and slides it back out.
 -- How far it slides depends on its width, so the slide starts once the next layout has sized the card, before it is drawn.
----@param group table the flux group that runs the notification's animation
+---@param animator Animator the animator that runs the notification's animation
 ---@param delay number seconds to wait before sliding in
 ---@param margin number pixels between the notification's right edge and the edge it slides out past
-function Notification:start(group, delay, margin)
-  self.pendingSlide = {group = group, delay = delay, margin = margin}
+function Notification:start(animator, delay, margin)
+  self.pendingSlide = {animator = animator, delay = delay, margin = margin}
 end
 
 -- Starts the slide asked for by start, out of sight right of its place by its width and the margin
@@ -84,7 +84,7 @@ function Notification:onResize()
     self.pendingSlide = nil
     local distance = self.layoutRect.width + slide.margin
     self.slideOffset = distance
-    slide.group:to(self, ENTER_SECONDS, {slideOffset = 0}):delay(slide.delay):ease("backout")
+    slide.animator:to(self, ENTER_SECONDS, {slideOffset = 0}):delay(slide.delay):ease("backout")
       :after(LEAVE_SECONDS, {slideOffset = distance}):delay(self.holdSeconds):ease("quadin")
       :oncomplete(function()
         self.finished = true

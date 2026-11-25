@@ -94,7 +94,7 @@ function LanguageSelectSetup:createLanguageMenu()
 end
 
 function LanguageSelectSetup:update(dt)
-  GAME.theme.images.bg_main:update(dt)
+  GAME.theme.images.bg_main:play(self.animator)
   
   for i, menuItem in ipairs(self.menu.menuItems) do
     if menuItem.selected then

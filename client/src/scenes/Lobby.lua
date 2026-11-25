@@ -575,7 +575,7 @@ end
 ------------------------------
 local loginStateLabel = ui.Label({text = loc("lb_login"), translate = false})
 function Lobby:updateSelf(dt)
-  self.backgroundImg:update(dt)
+  self.backgroundImg:play(self.animator)
 
   self:updateRoomPanel()
 

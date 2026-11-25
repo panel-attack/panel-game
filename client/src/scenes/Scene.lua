@@ -6,7 +6,7 @@ local GraphicsUtil = require("client.src.graphics.graphics_util")
 local tableUtils = require("common.lib.tableUtils")
 local SoundController = require("client.src.music.SoundController")
 local DebugSettings = require("client.src.debug.DebugSettings")
-local Flux = require("client.lib.flux.flux")
+local Animator = require("client.src.graphics.Animator")
 
 ---@alias sceneMusic ("none" | "main" | "title_screen" | "select_screen")
 
@@ -18,8 +18,8 @@ local Flux = require("client.lib.flux.flux")
 ---@field music sceneMusic
 ---@field fallbackMusic sceneMusic
 ---@field keepMusic boolean
----@field tweens table flux group of the scene's animations, the navigation stack updates it while the scene is the active one
----@field sceneAnimation SceneAnimation? the scene's animation file, the navigation stack updates it while the scene is the active one
+---@field animator Animator runs everything the scene shows, the navigation stack updates it while the scene is the active one
+---@field sceneAnimation SceneAnimation? the scene's animation file, played on the scene's animator
 ---@overload fun(sceneParams: table): Scene
 local Scene = class(
 ---@param self Scene
@@ -42,7 +42,7 @@ local Scene = class(
     --  the scene can alternatively specify it wants to keep the music that is currently playing
     --  if kept at false, the music will always change at scene switch
     self.keepMusic = false
-    self.tweens = Flux.group()
+    self.animator = Animator()
   end
 )
 
@@ -68,13 +68,13 @@ function Scene:applyMusic()
   end
 end
 
--- Advances the scene's tweens and animation, the navigation stack calls it while the scene is the active one
+-- Advances the scene's animator, with its animation file playing on it, the navigation stack calls it while the scene is the active one
 ---@param dt number seconds since the last update
 function Scene:updateAnimations(dt)
-  self.tweens:update(dt)
   if self.sceneAnimation then
-    self.sceneAnimation:update(dt)
+    self.sceneAnimation:play(self.animator)
   end
+  self.animator:update(dt)
 end
 
 -- abstract functions to be implemented per scene

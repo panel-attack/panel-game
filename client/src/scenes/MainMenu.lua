@@ -31,7 +31,7 @@ local InputSource = require("client.src.input.InputSource")
 
 -- Scene for the main menu, drawing the theme's main menu scene, or its main menu image when it has none
 local MainMenu = class(function(self, sceneParams)
-  self.sceneAnimation = SceneAnimation(Theme.MAIN_MENU_SCENE_FILE, nil, themes[config.theme].images.bg_main)
+  self.sceneAnimation = SceneAnimation(Theme.MAIN_MENU_SCENE_FILE, nil, self.animator, themes[config.theme].images.bg_main)
   self.music = "main"
   self.menu = self:createMainMenu()
   self.uiRoot:addChild(self.menu)
@@ -60,9 +60,7 @@ end
 -- The options may have switched the theme while the main menu waited under them, so it draws the new theme's scene or image
 function MainMenu:refresh()
   self.sceneAnimation.fallbackImage = themes[config.theme].images.bg_main
-  if self.sceneAnimation:isStale() then
-    self.sceneAnimation:load()
-  end
+  self.sceneAnimation:play(self.animator)
   if self.menu then
     self.menu:detach()
     self.menu = nil

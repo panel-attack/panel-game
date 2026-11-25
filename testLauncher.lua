@@ -57,6 +57,7 @@ end
 
 local allTests = {
   "common.tests.lib.JsonPrecisionTests",
+  "client.tests.AnimatorTests",
   "client.tests.AnimationLoaderTests",
   "client.tests.UpdatingImageTests",
   "client.tests.GameBaseStageBackgroundTests",

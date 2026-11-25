@@ -9,28 +9,28 @@ end, Scene)
 function SceneOverridingUpdate:update(dt)
 end
 
-local function testActiveSceneTweensRunWhenTheSceneOverridesUpdate()
+local function testActiveSceneAnimatorRunsWhenTheSceneOverridesUpdate()
   local scene = SceneOverridingUpdate()
   local target = {value = 0}
-  scene.tweens:to(target, 1, {value = 1}):ease("linear")
+  scene.animator:to(target, 1, {value = 1}):ease("linear")
   local navigationStack = NavigationStack({})
   navigationStack.scenes = {scene}
 
   navigationStack:updateSelf(0.5)
 
-  assert(math.abs(target.value - 0.5) < 0.0001, "the active scene's tweens should advance, got " .. target.value)
+  assert(math.abs(target.value - 0.5) < 0.0001, "the active scene's animator should advance, got " .. target.value)
 end
 
-local function testActiveSceneAnimationUpdatesWhenTheSceneOverridesUpdate()
+local function testActiveSceneAnimationPlaysWhenTheSceneOverridesUpdate()
   local scene = SceneOverridingUpdate()
-  local updatedWith
-  scene.sceneAnimation = {update = function(_, dt) updatedWith = dt end}
+  local playedOn
+  scene.sceneAnimation = {play = function(_, animator) playedOn = animator end}
   local navigationStack = NavigationStack({})
   navigationStack.scenes = {scene}
 
   navigationStack:updateSelf(0.5)
 
-  assert(updatedWith == 0.5, "the active scene's animation should be updated")
+  assert(playedOn == scene.animator, "the active scene's animation should play on the scene's animator")
 end
 
 local function testTheSceneOnTopIsLaidOut()
@@ -67,8 +67,8 @@ local function testDrawingASceneBeforeItsLayoutIsAnError()
   scene:draw()
 end
 
-testActiveSceneTweensRunWhenTheSceneOverridesUpdate()
-testActiveSceneAnimationUpdatesWhenTheSceneOverridesUpdate()
+testActiveSceneAnimatorRunsWhenTheSceneOverridesUpdate()
+testActiveSceneAnimationPlaysWhenTheSceneOverridesUpdate()
 testTheSceneOnTopIsLaidOut()
 testATransitionIsLaidOutWithBothItsScenes()
 testDrawingASceneBeforeItsLayoutIsAnError()

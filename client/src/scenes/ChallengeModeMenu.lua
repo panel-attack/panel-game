@@ -125,7 +125,7 @@ function ChallengeModeMenu:warnBeforeDiscarding(difficulty)
 end
 
 function ChallengeModeMenu:updateSelf(dt)
-  self.backgroundImg:update(dt)
+  self.backgroundImg:play(self.animator)
   self.menu:receiveInputs(InputSource.anyPlayer, dt)
   self.uiRoot:update(dt)
 end

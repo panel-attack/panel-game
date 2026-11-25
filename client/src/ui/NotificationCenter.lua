@@ -1,7 +1,7 @@
 local class = require("common.lib.class")
 local UiElement = require("client.src.ui.UIElement")
 local Notification = require("client.src.ui.Notification")
-local Flux = require("client.lib.flux.flux")
+local Animator = require("client.src.graphics.Animator")
 local consts = require("common.engine.consts")
 local Layout = require("client.src.ui.Layout")
 
@@ -15,7 +15,7 @@ local Layout = require("client.src.ui.Layout")
 ---@field notifications Notification[] the shown notifications, oldest first
 ---@field places table<Notification, integer> the place each shown notification holds, 1 at the top
 ---@field waiting Notification[] the notifications waiting for a place, first to be shown first
----@field tweens table flux group running every notification's animation
+---@field animator Animator runs every notification's animation on the center's clock
 ---@field clock number seconds the center has run
 ---@field nextStartTime number clock time the next notification may slide in, so notifications shown together slide in one after another
 ---@field skippingNextDraw boolean true to leave the notifications out of the next frame
@@ -35,7 +35,7 @@ local NotificationCenter = class(
     self.notifications = {}
     self.places = {}
     self.waiting = {}
-    self.tweens = Flux.group()
+    self.animator = Animator()
     self.clock = 0
     self.nextStartTime = 0
     self.skippingNextDraw = false
@@ -77,7 +77,7 @@ function NotificationCenter:showNow(notification)
   notification:setLayoutRule("id", "notification" .. notification.id)
   notification:setLayoutRule("floating", self:floatingInPlace(place))
   self:addChild(notification)
-  notification:start(self.tweens, self:takeStartDelay(), NotificationCenter.RIGHT_MARGIN)
+  notification:start(self.animator, self:takeStartDelay(), NotificationCenter.RIGHT_MARGIN)
 end
 
 ---@param place integer
@@ -141,7 +141,7 @@ end
 ---@param dt number seconds since the last update
 function NotificationCenter:updateSelf(dt)
   self.clock = self.clock + dt
-  self.tweens:update(dt)
+  self.animator:update(dt)
   self:removeFinished()
 end
 

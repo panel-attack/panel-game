@@ -34,7 +34,7 @@ ChallengeModeRecapScene.name = "ChallengeModeRecapScene"
 ------------------------------
 
 function ChallengeModeRecapScene:updateSelf(dt)
-  self.backgroundImg:update(dt)
+  self.backgroundImg:play(self.animator)
   local displayTime = love.timer.getTime() - self.recapStartTime
 
   -- if conditions are met, leave the scene

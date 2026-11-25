@@ -103,7 +103,7 @@ end, Scene)
 DiscordCommunitySetup.name = "DiscordCommunitySetup"
 
 function DiscordCommunitySetup:update(dt)
-  GAME.theme.images.bg_main:update(dt)
+  GAME.theme.images.bg_main:play(self.animator)
   self.menu:receiveInputs(InputSource.anyPlayer, dt)
 end
 

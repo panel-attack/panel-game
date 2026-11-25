@@ -456,14 +456,14 @@ end
 -- Loads the stage's animation, or its background image when it has none
 function GameBase:loadStageBackground()
   local image = UpdatingImage(self.stage.images.background, false, 0, 0, consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)
-  self.stageBackground = SceneAnimation(Stage.ANIMATED_BACKGROUND_FILE, self.stage.path, image)
+  self.stageBackground = SceneAnimation(Stage.ANIMATED_BACKGROUND_FILE, self.stage.path, self.animator, image)
 end
 
--- Advances the scene's animations and the stage's background, see Scene.updateAnimations
+-- Plays the stage's background on the scene's animator and advances it, see Scene.updateAnimations
 ---@param dt number seconds since the last update
 function GameBase:updateAnimations(dt)
+  self.stageBackground:play(self.animator)
   Scene.updateAnimations(self, dt)
-  self.stageBackground:update(dt)
 end
 
 function GameBase:update(dt)

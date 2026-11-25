@@ -538,7 +538,7 @@ function ModManagement:draw()
 end
 
 function ModManagement:update(dt)
-  themes[config.theme].images.bg_main:update(dt)
+  themes[config.theme].images.bg_main:play(self.animator)
   if self.receiveMode == "Menu" then
     self.menu:receiveInputs(InputSource.anyPlayer, dt)
   elseif self.receiveMode == "Back" then
