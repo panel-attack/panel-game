@@ -58,4 +58,10 @@ function Transition:draw()
   error("A transition must implement a draw function")
 end
 
+-- Returns the scene the transition draws right now, if it draws one
+---@return Scene?
+function Transition:getDrawnScene()
+  return nil
+end
+
 return Transition

@@ -1,0 +1,52 @@
+{
+  "drawables": [
+    {
+      "id": "Back",
+      "filePath": "test_image",
+      "position": {"x": 4, "y": 6},
+      "tint": [1, 0, 0],
+      "alpha": 0.6,
+      "rotation": 0.3
+    },
+    {
+      "id": "BackOverlap",
+      "filePath": "second_image",
+      "position": {"x": 30, "y": 20},
+      "tint": [0, 1, 0],
+      "alpha": 0.5,
+      "xScale": 0.75
+    },
+    {
+      "id": "Mover",
+      "filePath": "test_image",
+      "position": {"x": 50, "y": 40},
+      "tint": [1, 1, 0],
+      "animationTracks": [
+        {
+          "repeat": "yoyo",
+          "steps": [{"animateProperties": {"x": 90}, "durationSeconds": 1, "easeType": "linear"}]
+        }
+      ]
+    },
+    {
+      "id": "FrontGroup",
+      "position": {"x": 70, "y": 10},
+      "children": [
+        {
+          "id": "Front",
+          "filePath": "test_image",
+          "tint": [0, 0, 1],
+          "alpha": 0.7
+        },
+        {
+          "id": "FrontChild",
+          "filePath": "second_image",
+          "position": {"x": 20, "y": 30},
+          "tint": [1, 0, 1],
+          "alpha": 0.4,
+          "rotation": -0.5
+        }
+      ]
+    }
+  ]
+}

@@ -57,6 +57,8 @@ local time = os.time
 ---@field leaderboard Leaderboard
 ---@field persistence Persistence
 ---@field _shuttingDown boolean
+---@field errorReportDirectory string the folder error report files are written to
+---@field errorReportWindowsByAddress table<string, {startTime: integer, reportCount: integer}> each reporting address's current window and how many reports it sent in it
 local Server = class(
 ---@param self Server
 ---@param databaseParam ServerDB
@@ -81,6 +83,8 @@ local Server = class(
     self.lastPingBroadcastTime = self.lastProcessTime
     self.lobbyChanged = false
     self._shuttingDown = false
+    self.errorReportDirectory = "reports"
+    self.errorReportWindowsByAddress = {}
 
     initialize_mt_generator(self.persistence.getCsprngSeed())
     seed_from_mt(extract_mt())
@@ -97,6 +101,10 @@ local Server = class(
     logger.debug("initialized!")
   end
 )
+
+-- How many error reports one address may send per window; a client stuck crashing in a loop sends dozens a second
+Server.ERROR_REPORTS_PER_ADDRESS_PER_WINDOW = 10
+Server.ERROR_REPORT_WINDOW_SECONDS = 60 * 60
 
 function Server:start()
   logger.info("Starting up server with port: " .. (SERVER_PORT or 49569))
@@ -583,7 +591,7 @@ function Server:processMessage(message, connection)
   message = ClientMessages.sanitizeMessage(message)
 
   if message.error_report then -- Error report is checked for first so that a full login is not required
-    self:handleErrorReport(message.error_report)
+    self:handleErrorReport(message.error_report, connection.socket:getpeername())
     -- After sending the error report, the client will throw the error, so end the connection.
     local player = self.connectionToPlayer[connection]
     if player then
@@ -644,7 +652,9 @@ function Server:processMessage(message, connection)
     elseif (player.state == "playing" or player.state == "paused") and message.type == "pauseToggle" then
       self.rooms[message.roomNumber]:togglePause(player, message.paused)
     elseif (player.state == "spectating") and message.leave_room then
-      if self.spectatorToRoom[player] and self.spectatorToRoom[player]:remove_spectator(player) then
+      local room = self.spectatorToRoom[player]
+      self.spectatorToRoom[player] = nil
+      if room and room:remove_spectator(player) then
         self:setLobbyChanged()
         return true
       end
@@ -656,11 +666,34 @@ function Server:processMessage(message, connection)
   return false
 end
 
-function Server:handleErrorReport(errorReport)
+-- Writes the error report to a file, unless its address has already sent its limit of reports for this window
+---@param errorReport table
+---@param ipAddress string? the address the report came from
+function Server:handleErrorReport(errorReport, ipAddress)
+  if not self:acceptsErrorReportFrom(ipAddress or "unknown address") then
+    return
+  end
   logger.warn("Received an error report.")
-  if not FileIO.write_error_report(errorReport) then
+  if not FileIO.write_error_report(errorReport, self.errorReportDirectory, time()) then
     logger.error("The error report was either too large or had an I/O failure when attempting to write the file.")
   end
+end
+
+-- Counts a report from ipAddress against its window, logging once when the address goes over the limit
+---@param ipAddress string
+---@return boolean # if the report is within the address's limit
+function Server:acceptsErrorReportFrom(ipAddress)
+  local now = time()
+  local window = self.errorReportWindowsByAddress[ipAddress]
+  if not window or now - window.startTime >= self.ERROR_REPORT_WINDOW_SECONDS then
+    window = {startTime = now, reportCount = 0}
+    self.errorReportWindowsByAddress[ipAddress] = window
+  end
+  window.reportCount = window.reportCount + 1
+  if window.reportCount == self.ERROR_REPORTS_PER_ADDRESS_PER_WINDOW + 1 then
+    logger.warn("Dropping error reports from " .. ipAddress .. " for the rest of its " .. self.ERROR_REPORT_WINDOW_SECONDS .. " second window: it sent more than " .. self.ERROR_REPORTS_PER_ADDRESS_PER_WINDOW)
+  end
+  return window.reportCount <= self.ERROR_REPORTS_PER_ADDRESS_PER_WINDOW
 end
 
 -- Flush the log so we can see new info periodically. The default caches for huge amounts of time.

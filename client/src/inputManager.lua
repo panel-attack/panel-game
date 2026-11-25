@@ -111,26 +111,21 @@ function inputManager:onJoystickRemoved(joystick)
 end
 
 function inputManager:joystickPressed(joystick, button)
-  if not joystickManager:isRegistered(joystick) then
-    -- always check and register to be sure, in rare cases joystickadded is not called or not called early enough
-    joystickManager:registerJoystick(joystick)
-  end
+  joystickManager:registerJoystickIfMissing(joystick)
 
   local key = joystickManager:getJoystickButtonName(joystick, button)
   self.allKeys.isDown[key] = KEY_CHANGE.DETECTED
 end
 
 function inputManager:joystickReleased(joystick, button)
-  if not joystickManager:isRegistered(joystick) then
-    -- always check and register to be sure, in rare cases joystickadded is not called or not called early enough
-    joystickManager:registerJoystick(joystick)
-  end
+  joystickManager:registerJoystickIfMissing(joystick)
 
   local key = joystickManager:getJoystickButtonName(joystick, button)
   self.allKeys.isUp[key] = KEY_CHANGE.DETECTED
 end
 
 function inputManager:joystickaxis(joystick, axisIndex, value)
+  joystickManager:registerJoystickIfMissing(joystick)
   local device = joystickManager.devices[joystick:getID()]
   if not device.defaultAxisPositions[axisIndex] then
     logger.info("Detected input from previously unrecorded axis " .. axisIndex .. " for stick with guid " .. joystick:getGUID())
@@ -197,6 +192,7 @@ end
 -- maps joysticks' dpad to the appropriate input maps
 function inputManager:dPadToButtons()
   for _, joystick in ipairs(love.joystick.getJoysticks()) do
+    joystickManager:registerJoystickIfMissing(joystick)
     for hatIndex = 1, joystick:getHatCount() do
       local dpadState = joystickManager:getDPadState(joystick, hatIndex)
       for key, isPressed in pairs(dpadState) do
@@ -734,40 +730,43 @@ function inputManager:setupDefaultKeyConfigurations()
   self:updateAllDeviceNumbers()
 end
 
----@return InputConfiguration? Input configuration with active input, or nil
-function inputManager:detectActiveInputConfiguration()
-  for i = 1, #self.inputConfigurations do
-    local inputConfig = self.inputConfigurations[i]
-    for _, keyName in ipairs(consts.KEY_NAMES) do
-      if inputConfig.isDown and inputConfig.isDown[keyName] then
-        return inputConfig
+---@param binding string A key or controller button binding
+---@param localHumanPlayers Player[]
+---@return boolean True if the input configuration of one of the players binds it
+local function isBoundByAPlayer(binding, localHumanPlayers)
+  for _, player in ipairs(localHumanPlayers) do
+    local inputConfig = player.inputConfiguration
+    if inputConfig then
+      for _, keyName in ipairs(consts.KEY_NAMES) do
+        if inputConfig[keyName] == binding then
+          return true
+        end
       end
     end
   end
-
-  return nil
+  return false
 end
 
+-- Configurations can share a key, as the default keyboard ones do, so a held key a player's own configuration binds
+-- counts as that player's input even when a configuration no player has binds it too
 ---@param localHumanPlayers Player[]
----@return boolean True if an unassigned configuration has active input
+---@return boolean True if a held key or button is bound only by configurations none of the players has
 function inputManager:checkForUnassignedConfigurationInputs(localHumanPlayers)
   if #localHumanPlayers == 0 then
     return false
   end
 
-  local activeConfig = self:detectActiveInputConfiguration()
-  if not activeConfig then
-    return false
-  end
-
-  local assignedConfigs = {}
-  for _, player in ipairs(localHumanPlayers) do
-    if player.inputConfiguration then
-      assignedConfigs[player.inputConfiguration] = true
+  for _, inputConfig in ipairs(self.inputConfigurations) do
+    if inputConfig.isDown then
+      for _, keyName in ipairs(consts.KEY_NAMES) do
+        if inputConfig.isDown[keyName] and not isBoundByAPlayer(inputConfig[keyName], localHumanPlayers) then
+          return true
+        end
+      end
     end
   end
 
-  return not assignedConfigs[activeConfig]
+  return false
 end
 
 -- Gets all configured joystick GUIDs from input configurations

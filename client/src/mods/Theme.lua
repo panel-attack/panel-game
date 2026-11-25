@@ -979,6 +979,8 @@ function theme_init()
   end
 end
 
+-- The menu sounds. Menus play them through UiElement and Scene, which keep a scene that is not on screen silent; play
+-- them here only for a reply to something outside any scene, such as a dropped file or a request that timed out
 function Theme:playCancelSfx()
   SoundController:playSfx(self.sounds.menu_cancel)
 end

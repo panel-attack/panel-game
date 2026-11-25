@@ -8,7 +8,7 @@ local function createDebugBoolSelector(debugKey, onChangeFn)
   return ui.BoolSelector({
     startValue = DebugSettings.get(debugKey) --[[@as boolean]],
     onValueChange = function(selfElement, value)
-      GAME.theme:playMoveSfx()
+      selfElement:playMoveSfx()
       DebugSettings.set(debugKey, value)
       if onChangeFn then
         onChangeFn()
@@ -60,8 +60,8 @@ local function buildDebugMenuItems(options)
   end
 
   if options.showBackButton then
-    debugMenuOptions[#debugMenuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil, function()
-      GAME.theme:playCancelSfx()
+    debugMenuOptions[#debugMenuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil, function(backButton)
+      backButton:playCancelSfx()
       if options.onBack then
         options.onBack()
       end

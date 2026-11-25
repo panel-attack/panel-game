@@ -2,6 +2,9 @@ local logger = require("common.lib.logger")
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
 local Queue = require("common.lib.Queue")
+local Signal = require("common.lib.signal")
+local Stack = require("common.engine.Stack")
+require("common.engine.checkMatches")
 
 -- A pattern for sending garbage
 ---@class AttackPattern
@@ -10,7 +13,7 @@ local Queue = require("common.lib.Queue")
 ---@field startTime integer
 ---@field endsChain boolean
 ---@field garbage Garbage
-AttackPattern =
+local AttackPattern =
   class(
   function(self, width, height, startTime, metal, chain, endsChain)
     self.width = width
@@ -34,6 +37,9 @@ AttackPattern =
 ---@field attackSettings table The format for serializing AttackPattern information
 ---@field stopWatch integer  The stopWatch to control the continuity of the sending process
 ---@field outgoingGarbage GarbageQueue The garbage queue attacks are added to
+---@field chainSizeSent integer the size of the chain the current frame sent a link of, 0 if it sent none
+---@field comboWidthsSent integer[] the widths of the combo garbage pieces the current frame sent
+---@field metalPiecesSent integer how many pieces of metal garbage the current frame sent
 local AttackEngine = class(
   function(self, attackSettings, garbageQueue)
     self.delayBeforeStart = attackSettings.delayBeforeStart or 0
@@ -59,6 +65,14 @@ local AttackEngine = class(
     -- the garbage queue must be modified to match the attack settings
     self.outgoingGarbage.treatMetalAsCombo = self.treatMetalAsCombo
     self.outgoingGarbage.illegalStuffIsAllowed = true
+
+    self.chainSizeSent = 0
+    self.comboWidthsSent = {}
+    self.metalPiecesSent = 0
+
+    Signal.turnIntoEmitter(self)
+    -- reports each frame's attack with the values a Stack's "matched" signal carries for the same attack
+    self:createSignal("attackSent")
   end
 )
 
@@ -102,9 +116,10 @@ function AttackEngine.addEndChainPattern(self, chainEnd)
   self.attackPatterns[#self.attackPatterns + 1] = attackPattern
 end
 
-local garbageList = {}
 function AttackEngine.run(self)
-  table.clear(garbageList)
+  self.chainSizeSent = 0
+  table.clear(self.comboWidthsSent)
+  self.metalPiecesSent = 0
 
   local highestStartTime = self.attackPatterns[#self.attackPatterns].startTime
 
@@ -132,16 +147,17 @@ function AttackEngine.run(self)
             local garbage = self.attackPatterns[i].garbage
             if garbage.isChain then
               self.outgoingGarbage:addChainLink(self.stopWatch, math.random(1, 11), math.random(1, 6))
+              self.chainSizeSent = #self.outgoingGarbage.currentChain.linkTimes + 1
             else
               garbage.frameEarned = self.stopWatch
               -- we need a coordinate for the origin of the attack animation
               garbage.rowEarned = math.random(1, 11)
               garbage.colEarned = math.random(1, 6)
-              maxCombo = garbage.width + 1
               -- if the attack engine garbage is pushed by ref, the garbage queue would modify the reference
               -- which could also alter the chain flag in case of fake chains
               -- so make sure to deepcpy combos before sending
               self.outgoingGarbage:push(deepcpy(garbage))
+              self:recordGarbageSent(garbage)
             end
           end
         end
@@ -149,7 +165,37 @@ function AttackEngine.run(self)
     end
   end
 
+  self:emitAttackSent()
   self.stopWatch = self.stopWatch + 1
+end
+
+-- Records a piece of non-chain garbage as part of the current frame's attack
+---@param garbage Garbage
+function AttackEngine:recordGarbageSent(garbage)
+  if garbage.isMetal then
+    self.metalPiecesSent = self.metalPiecesSent + 1
+  elseif garbage.height > 1 then
+    -- the outgoing garbage queue sends combo garbage taller than a row as a finished chain
+    if self.chainSizeSent == 0 then
+      self.chainSizeSent = garbage.height + 1
+    end
+  else
+    self.comboWidthsSent[#self.comboWidthsSent + 1] = garbage.width
+  end
+end
+
+-- Emits the attack the current frame sent, if it sent one
+function AttackEngine:emitAttackSent()
+  local comboSize = 0
+  if #self.comboWidthsSent > 0 then
+    table.sort(self.comboWidthsSent)
+    comboSize = Stack.getComboSizeForGarbageWidths(self.comboWidthsSent)
+  end
+  -- a shock sends one metal piece per metal panel past the second
+  local metalCount = self.metalPiecesSent > 0 and self.metalPiecesSent + 2 or 0
+  if self.chainSizeSent > 0 or comboSize > 0 or metalCount > 0 then
+    self:emitSignal("attackSent", self.chainSizeSent > 0, self.chainSizeSent, comboSize, metalCount)
+  end
 end
 
 -- Transfers the attack engine state variables from source to destination (bidirectional)

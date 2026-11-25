@@ -25,7 +25,11 @@ local Scene = class(
 ---@param self Scene
   function (self, sceneParams)
     sceneParams = sceneParams or {}
-    self.uiRoot = ui.UiElement({layoutRules = {sizing = Layout.fixedSize(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)}})
+    -- hidden until the navigation stack draws the scene, so a scene loaded before it is pushed is not on screen
+    self.uiRoot = ui.UiElement({
+      layoutRules = {sizing = Layout.fixedSize(consts.CANVAS_WIDTH, consts.CANVAS_HEIGHT)},
+      isVisible = false
+    })
     -- scenes may specify theme music to use that is played once they are switched to
     -- eligible labels:
     -- main
@@ -112,8 +116,28 @@ function Scene:drawCommunityMessage()
   end
 end
 
-function Scene.pop()
-  GAME.theme:playCancelSfx()
+-- Returns whether the scene is drawn right now, rather than under another scene or replaced by a transition's message
+---@return boolean
+function Scene:isOnScreen()
+  return self.uiRoot:isOnScreen()
+end
+
+-- The scene's menu sounds, played only while it is on screen
+function Scene:playMoveSfx()
+  self.uiRoot:playMoveSfx()
+end
+
+function Scene:playValidationSfx()
+  self.uiRoot:playValidationSfx()
+end
+
+function Scene:playCancelSfx()
+  self.uiRoot:playCancelSfx()
+end
+
+-- Goes back to the previous scene with the cancel sound
+function Scene:pop()
+  self:playCancelSfx()
   GAME.navigationStack:pop()
 end
 

@@ -11,6 +11,7 @@ local tableUtils = require("common.lib.tableUtils")
 local SoundTest = require("client.src.scenes.SoundTest")
 local SetUserIdMenu = require("client.src.scenes.SetUserIdMenu")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
+local RendererSetting = require("client.src.graphics.RendererSetting")
 local util = require("common.lib.util")
 local ModManagement = require("client.src.scenes.ModManagement")
 local system = require("client.src.system")
@@ -52,7 +53,7 @@ function OptionsMenu:loadScreens()
   return menus
 end
 
-function OptionsMenu.exit()
+function OptionsMenu.exit(backButton)
   if not themes[config.theme].fullyLoaded then
     themes[config.theme]:load()
     for _, theme in pairs(themes) do
@@ -62,7 +63,7 @@ function OptionsMenu.exit()
       end
     end
   end
-  GAME.theme:playValidationSfx()
+  backButton:playValidationSfx()
   GAME.navigationStack:pop()
 end
 
@@ -88,7 +89,7 @@ local function createToggleButtonGroup(configField, onChangeFn)
     values = {false, true},
     selectedIndex = config[configField] and 2 or 1,
     onChange = function(group, value)
-      GAME.theme:playMoveSfx()
+      group:playMoveSfx()
       config[configField] = value
       if onChangeFn then
         onChangeFn()
@@ -142,7 +143,7 @@ function OptionsMenu:loadInfoScreen(text)
     layoutRules = {sizing = {horizontal = Layout.GROW, vertical = Layout.GROW}, padding = {left = 6, top = 6}}
   })
   infoScreen.onBackCallback = function()
-    GAME.theme:playCancelSfx()
+    self:playCancelSfx()
     self.backgroundImage = themes[config.theme].images.bg_main
     self:switchToScreen("aboutMenu")
   end
@@ -165,7 +166,7 @@ function OptionsMenu:loadBaseMenu()
     values = languageCodes,
     selectedIndex = languageIndex,
     onChange = function(value)
-      GAME.theme:playMoveSfx()
+      self:playMoveSfx()
       config.language_code = value
       GAME:setLanguage(value)
       self:updateMenuLanguage()
@@ -175,31 +176,31 @@ function OptionsMenu:loadBaseMenu()
   local baseMenuOptions = {
       ui.MenuItem.createStepperMenuItem("op_language", nil, nil, languageStepper),
       ui.MenuItem.createButtonMenuItem("op_general", nil, nil, function()
-          GAME.theme:playValidationSfx()
+          self:playValidationSfx()
           self:switchToScreen("generalMenu")
         end), 
       ui.MenuItem.createButtonMenuItem("op_graphics", nil, nil, function()
-          GAME.theme:playValidationSfx()
+          self:playValidationSfx()
           self:switchToScreen("graphicsMenu")
         end),
       ui.MenuItem.createButtonMenuItem("op_audio", nil, nil, function()
-          GAME.theme:playValidationSfx()
+          self:playValidationSfx()
           self:switchToScreen("audioMenu")
         end),
       ui.MenuItem.createButtonMenuItem("op_debug", nil, nil, function()
-          GAME.theme:playValidationSfx()
+          self:playValidationSfx()
           self:switchToScreen("debugMenu")
         end),
       ui.MenuItem.createButtonMenuItem("op_about", nil, nil, function()
-          GAME.theme:playValidationSfx()
+          self:playValidationSfx()
           self:switchToScreen("aboutMenu")
         end),
       ui.MenuItem.createButtonMenuItem("Modify User ID", nil, false, function()
-          GAME.theme:playValidationSfx()
+          self:playValidationSfx()
           self:switchToScreen("modifyUserIdMenu")
         end),
       ui.MenuItem.createButtonMenuItem("mod_manage_title", nil, nil, function()
-        GAME.theme:playValidationSfx()
+        self:playValidationSfx()
         GAME.navigationStack:push(ModManagement())
       end),
       ui.MenuItem.createButtonMenuItem("back", nil, nil, self.exit)
@@ -219,7 +220,7 @@ function OptionsMenu:loadGeneralMenu()
     values = {"with my name", "anonymously", "not at all"},
     selectedIndex = saveReplaysPubliclyIndexMap[config.save_replays_publicly],
     onChange = function(group, value)
-      GAME.theme:playMoveSfx()
+      self:playMoveSfx()
       config.save_replays_publicly = value
     end
   })
@@ -271,7 +272,7 @@ function OptionsMenu:loadGeneralMenu()
       values = releaseStreams,
       selectedIndex = tableUtils.indexOf(releaseStreams, GAME.updater.activeVersion.releaseStream.name),
       onChange = function(group, value)
-        GAME.theme:playMoveSfx()
+        self:playMoveSfx()
         local success = updateReleaseStreamConfig(value)
         if not success then
           -- there are no versions for the picked stream
@@ -302,7 +303,7 @@ function OptionsMenu:loadGeneralMenu()
 
   generalMenuOptions[#generalMenuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil,
   function()
-    GAME.theme:playCancelSfx()
+    self:playCancelSfx()
     self:switchToScreen("baseMenu")
     if GAME.updater and GAME.updater.releaseStreams then
       if releaseStreamSelection.value ~= GAME.updater.activeReleaseStream.name then
@@ -334,7 +335,7 @@ function OptionsMenu:loadGraphicsMenu()
     values = themeIds,
     selectedIndex = themeIndex,
     onChange = function(value)
-      GAME.theme:playMoveSfx()
+      self:playMoveSfx()
       themes[value]:preload()
       config.theme = value
       GAME.theme = themes[value]
@@ -402,7 +403,7 @@ function OptionsMenu:loadGraphicsMenu()
       return scaleType.value == config.gameScaleType
     end).index,
     onChange = function(group, value)
-      GAME.theme:playMoveSfx()
+      self:playMoveSfx()
       config.gameScaleType = value
       updateFixedButtonGroupVisibility()
       scaleSettingsChanged()
@@ -423,6 +424,20 @@ function OptionsMenu:loadGraphicsMenu()
     return slider
   end
 
+  -- the renderer is chosen in love.conf, so a change only applies on the next launch
+  local rendererButtonGroup = ui.ButtonGroup({
+    buttons = {
+      ui.TextButton({label = ui.Label({text = "op_renderer_auto"})}),
+      ui.TextButton({label = ui.Label({text = "OpenGL", translate = false})})
+    },
+    values = RendererSetting.VALUES,
+    selectedIndex = tableUtils.indexOf(RendererSetting.VALUES, config.renderer),
+    onChange = function(group, value)
+      group:playMoveSfx()
+      config.renderer = value
+    end
+  })
+
   local graphicsMenuOptions = {
     ui.MenuItem.createStepperMenuItem("op_theme", nil, nil, themeStepper),
     ui.MenuItem.createToggleButtonGroupMenuItem("op_scale", nil, nil, scaleButtonGroup),
@@ -431,12 +446,16 @@ function OptionsMenu:loadGraphicsMenu()
     ui.MenuItem.createToggleButtonGroupMenuItem("op_renderTelegraph", nil, nil, createToggleButtonGroup("renderTelegraph")),
     ui.MenuItem.createToggleButtonGroupMenuItem("op_renderAttacks", nil, nil, createToggleButtonGroup("renderAttacks")),
     ui.MenuItem.createSliderMenuItem("op_shakeIntensity", nil, nil, getShakeIntensitySlider()),
-    ui.MenuItem.createButtonMenuItem("back", nil, nil, function()
-          GAME.showGameScaleUntil = GAME.timer
-          GAME.theme:playCancelSfx()
-          self:switchToScreen("baseMenu")
-        end)
   }
+  -- LÖVE 11 has only OpenGL
+  if love.getVersion() >= 12 then
+    graphicsMenuOptions[#graphicsMenuOptions + 1] = ui.MenuItem.createToggleButtonGroupMenuItem("op_renderer", nil, nil, rendererButtonGroup)
+  end
+  graphicsMenuOptions[#graphicsMenuOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil, function()
+    GAME.showGameScaleUntil = GAME.timer
+    self:playCancelSfx()
+    self:switchToScreen("baseMenu")
+  end)
 
   local menu = ui.Menu.createCenteredMenu(graphicsMenuOptions)
   if config.gameScaleType == "fixed" then
@@ -455,7 +474,7 @@ function OptionsMenu:loadSoundMenu()
     values = {"stage", "often_stage", "either", "often_characters", "characters"},
     selectedIndex = musicFrequencyIndexMap[config.use_music_from],
     onChange = function(value)
-      GAME.theme:playMoveSfx()
+      self:playMoveSfx()
       config.use_music_from = value
     end
   })
@@ -477,7 +496,7 @@ function OptionsMenu:loadSoundMenu()
         GAME.navigationStack:push(SoundTest())
       end),
     ui.MenuItem.createButtonMenuItem("back", nil, nil, function()
-        GAME.theme:playCancelSfx()
+        self:playCancelSfx()
         self:switchToScreen("baseMenu")
       end)
   }
@@ -500,39 +519,39 @@ end
 function OptionsMenu:loadAboutMenu()
   local aboutMenuOptions = {
     ui.MenuItem.createButtonMenuItem("op_about_themes", nil, nil, function()
-          GAME.theme:playValidationSfx()
+          self:playValidationSfx()
           love.system.openURL("https://github.com/panel-attack/panel-game/blob/beta/docs/themes.md")
         end),
     ui.MenuItem.createButtonMenuItem("op_about_characters", nil, nil, function()
-          GAME.theme:playValidationSfx()
+          self:playValidationSfx()
           love.system.openURL("https://github.com/panel-attack/panel-game/blob/beta/docs/characters.md")
         end),
     ui.MenuItem.createButtonMenuItem("op_about_stages", nil, nil, function()
-          GAME.theme:playValidationSfx()
+          self:playValidationSfx()
           love.system.openURL("https://github.com/panel-attack/panel-game/blob/beta/docs/stages.md")
         end),
     ui.MenuItem.createButtonMenuItem("op_about_panels", nil, nil, function()
-          GAME.theme:playValidationSfx()
+          self:playValidationSfx()
           love.system.openURL("https://github.com/panel-attack/panel-game/blob/beta/docs/panels.md")
         end),
     ui.MenuItem.createButtonMenuItem("op_about_puzzles", nil, nil, function()
-          GAME.theme:playValidationSfx()
+          self:playValidationSfx()
           love.system.openURL("https://github.com/panel-attack/panel-game/blob/beta/docs/puzzles.md")
         end),
     ui.MenuItem.createButtonMenuItem("op_about_attack_files", nil, nil, function()
-          GAME.theme:playValidationSfx()
+          self:playValidationSfx()
           love.system.openURL("https://github.com/panel-attack/panel-game/blob/beta/docs/training.txt")
         end),
     ui.MenuItem.createButtonMenuItem("op_about_installing_mods", nil, nil, function()
-          GAME.theme:playValidationSfx()
+          self:playValidationSfx()
           love.system.openURL("https://github.com/panel-attack/panel-game/blob/beta/docs/installMods.md")
         end),
     ui.MenuItem.createButtonMenuItem("op_system_info", nil, nil, function()
-          GAME.theme:playValidationSfx()
+          self:playValidationSfx()
           self:switchToScreen("systemInfo")
         end),
     ui.MenuItem.createButtonMenuItem("back", nil, nil, function()
-          GAME.theme:playCancelSfx()
+          self:playCancelSfx()
           self:switchToScreen("baseMenu")
         end)
   }
@@ -560,7 +579,7 @@ function OptionsMenu:loadModifyUserIdMenu()
     end
   end
   modifyUserIdOptions[#modifyUserIdOptions + 1] = ui.MenuItem.createButtonMenuItem("back", nil, nil, function()
-        GAME.theme:playCancelSfx()
+        self:playCancelSfx()
         self:switchToScreen("baseMenu")
       end)
 

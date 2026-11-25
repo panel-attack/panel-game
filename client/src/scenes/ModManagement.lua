@@ -151,7 +151,7 @@ function ModManagement:load()
   local menuItems = {}
   for _, tab in ipairs(TABS) do
     menuItems[#menuItems + 1] = ui.MenuItem.createButtonMenuItem(tab.title, nil, true, function()
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
       self:openTab(tab)
     end)
   end
@@ -161,7 +161,7 @@ function ModManagement:load()
     end)
   end
   menuItems[#menuItems + 1] = ui.MenuItem.createButtonMenuItem("back", nil, true, function()
-    GAME.theme:playCancelSfx()
+    self:playCancelSfx()
     GAME.navigationStack:pop()
   end)
 
@@ -222,7 +222,7 @@ end
 
 -- Plays the cancel sound, closes the tab and returns to the menu
 function ModManagement:pressBackButton()
-  GAME.theme:playCancelSfx()
+  self:playCancelSfx()
   self:closeTab()
 end
 
@@ -350,7 +350,7 @@ function ModManagement:createExpandButton(node)
   local collapsedKeys = self.collapsedKeys[self.tab]
   local button = ui.ArrowButton({direction = collapsedKeys[node.key] and "right" or "down", layoutRules = FILL_CELL})
   local function toggle()
-    GAME.theme:playValidationSfx()
+    self:playValidationSfx()
     collapsedKeys[node.key] = not collapsedKeys[node.key] or nil
     self:rebuildRows(node, self.cursor.selectedGridPos.x)
   end
@@ -512,10 +512,10 @@ end
 ---@param isLocked boolean
 function ModManagement:onStatusButtonPressed(row, status, isLocked)
   if isLocked or not ModLoader.setModStatusAndRefresh(self.tab.loader, row.node, status) then
-    GAME.theme:playCancelSfx()
+    self:playCancelSfx()
     return
   end
-  GAME.theme:playValidationSfx()
+  self:playValidationSfx()
   GAME.localPlayer:refreshDisabledSelections()
   self:rebuildRows(row.node, self.cursor.selectedGridPos.x, row.linkedFrom)
 end
@@ -525,10 +525,10 @@ end
 ---@param offset integer -1 to move up, 1 to move down
 function ModManagement:onMoveButtonPressed(node, offset)
   if not ModLoader.moveModInDisplayOrder(self.tab.loader, node, offset) then
-    GAME.theme:playCancelSfx()
+    self:playCancelSfx()
     return
   end
-  GAME.theme:playMoveSfx()
+  self:playMoveSfx()
   self:rebuildRows(node, self.cursor.selectedGridPos.x)
 end
 

@@ -17,7 +17,7 @@ local LevelData = require("common.data.LevelData")
 local GameModes = require("common.data.GameModes")
 
 ---@enum NetClientStates
-local states = { OFFLINE = 1, LOGIN = 2, ONLINE = 3, ROOM = 4, INGAME = 5 }
+local states = { OFFLINE = 1, LOGIN = 2, ONLINE = 3, ROOM = 4, INGAME = 5, LEAVING_ROOM = 6 }
 
 -- Most functions of NetClient are private as they only should get triggered via incoming server messages
 --  that get automatically processed via NetClient:update
@@ -111,12 +111,6 @@ end
 
 ---@param self NetClient
 local function processGameResultMessage(self, message)
-  -- receiving a gameResult message means that both players have reported their game results to the server
-  -- that means from here on it is expected to receive no further input messages from either player
-  -- if we went game over first, the opponent will notice later and keep sending inputs until we went game over on their end too
-  -- these extra messages will remain unprocessed in the queue and need to be cleared up so they don't get applied the next match
-  self.tcpClient:dropOldInputMessages()
-
   if not self.room then
     return
   end
@@ -144,11 +138,6 @@ local function processLeaveRoomMessage(self, message)
     self.room = nil
     self.state = states.ONLINE
 
-    if room.hasShutdown then
-      -- the client left the room itself and already shut it down and left the scene, this is only the server's confirmation
-      return
-    end
-
     if room.match then
       -- we're ending the game via an abort so we don't want to enter the standard onMatchEnd callback
       room.match:disconnectSignal("matchEnded", room)
@@ -167,6 +156,13 @@ local function processLeaveRoomMessage(self, message)
       GAME.notificationCenter:show(message.reason, false)
     end
   end
+end
+
+-- The server confirming the leave the client asked for; the client shut the room down and left its scene back then
+---@param self NetClient
+---@param message table
+local function processLeaveConfirmation(self, message)
+  self:setState(states.ONLINE)
 end
 
 local function processTauntMessage(self, message)
@@ -245,16 +241,16 @@ local function processMatchStartMessage(self, message)
     end
   end
 
-  if self.state == states.INGAME then
-    -- if there is a match in progress when receiving a match start that means we are in the process of catching up via transition
-    -- deinit and nil to cancel the catchup
+  if self.room.match then
+    -- a match still in progress when receiving a match start means a spectator is behind on it or catching up to it
+    -- deinit and nil to cancel it, and let go of its end so it can't end the new match should it still run to its end
+    self.room.match:disconnectSignal("matchEnded", self.room)
     self.room.match:deinit()
     self.room.match = nil
 
     -- although the most important thing is replacing the on-going transition but startMatch already does that as a default
   end
 
-  self.tcpClient:dropOldInputMessages()
   local match = self.room:startMatch(message.replay)
   self:setState(states.INGAME)
   if match.supportsPause and match:hasLocalPlayer() then
@@ -293,13 +289,11 @@ local function processMenuStateMessage(player, message)
   end
 end
 
-local function processInputMessages(self)
-  local messages = self.tcpClient.receivedMessageQueue:pop_all_with(NetworkProtocol.serverMessageTypes.opponentInput.prefix, NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix)
+---@param self NetClient
+local function processInputMessage(self, message)
   if self.room and self.room.match then
-    for _, msg in ipairs(messages) do
-      for type, data in pairs(msg) do
-        self.room.match:receiveInput(type, data)
-      end
+    for type, data in pairs(message) do
+      self.room.match:receiveInput(type, data)
     end
   end
 end
@@ -321,6 +315,8 @@ end
 
 -- starts to spectate a 2p vs online match
 local function spectate2pVsOnlineMatch(self, spectateRequestGrantedMessage)
+  -- a grant that arrives after the request timed out still made the server count the client as a spectator, so it is taken too
+  self.pendingResponses.spectateResponse = nil
   resetLobbyData(self)
   GAME.battleRoom = BattleRoom.createFromServerMessage(spectateRequestGrantedMessage)
   self.room = GAME.battleRoom
@@ -341,13 +337,18 @@ end
 
 ---@param self NetClient
 local function handleGameAbort(self, gameAbortMessage)
-  if self.room and self.room.match and self.state == states.INGAME then
-    self.tcpClient:dropOldInputMessages()
+  if self.room and self.state == states.INGAME and not self.room.match then
+    -- the match already ended here and its game over screen returns to character select on its own,
+    -- but the server sends no result for an aborted match
+    self.state = states.ROOM
+  elseif self.room and self.state == states.INGAME then
     -- we're ending the game via an abort so we don't want to enter the standard onMatchEnd callback
     self.room.match:disconnectSignal("matchEnded", self.room)
     -- instead we actively abort the match ourselves
     self.room.match:abort()
     self.room.match:deinit()
+    -- and return the room to character select the way the callback would have
+    self.room:endMatch()
     self.state = states.ROOM
     if not gameAbortMessage.source or gameAbortMessage.source ~= GAME.localPlayer.name then
       -- only pop if the local player is not the source of the abort
@@ -362,6 +363,16 @@ local function handleGameAbort(self, gameAbortMessage)
   end
 end
 
+local OPPONENT_INPUT = NetworkProtocol.serverMessageTypes.opponentInput.prefix
+local SECOND_OPPONENT_INPUT = NetworkProtocol.serverMessageTypes.secondOpponentInput.prefix
+
+-- The key that marks each message the net client takes out of the queue, in the order a message's keys are checked.
+-- Responses to requests are none of these and stay in the queue for the request waiting on them.
+local MESSAGE_KEYS = {
+  OPPONENT_INPUT, SECOND_OPPONENT_INPUT, "create_room", "lobbyStateV2", "challengeUpdate", "spectate_request_granted", "menu_state",
+  "ranked_match_approved", "leave_room", "match_start", "taunt", "gameResult", "spectators", "gameAbort", "pingUpdate",
+}
+
 local function createListener(self, messageType, callback)
   local listener = MessageListener(messageType)
   listener:subscribe(self, callback)
@@ -371,12 +382,15 @@ end
 local function createListeners(self)
   -- messageListener holds *all* available listeners
   local messageListeners = {}
+  messageListeners[OPPONENT_INPUT] = createListener(self, OPPONENT_INPUT, processInputMessage)
+  messageListeners[SECOND_OPPONENT_INPUT] = createListener(self, SECOND_OPPONENT_INPUT, processInputMessage)
   messageListeners.create_room = createListener(self, "create_room", start2pVsOnlineMatch)
   messageListeners.lobbyStateV2 = createListener(self, "lobbyStateV2", updateLobbyStateV2)
   messageListeners.challengeUpdate = createListener(self, "challengeUpdate", processChallengeUpdate)
-  messageListeners.menu_state = createListener(self, "menu_state", processMenuStateMessage)
+  messageListeners.spectate_request_granted = createListener(self, "spectate_request_granted", spectate2pVsOnlineMatch)
   messageListeners.ranked_match_approved = createListener(self, "ranked_match_approved", processRankedStatusMessage)
   messageListeners.leave_room = createListener(self, "leave_room", processLeaveRoomMessage)
+  messageListeners.leaveConfirmation = createListener(self, "leave_room", processLeaveConfirmation)
   messageListeners.match_start = createListener(self, "match_start", processMatchStartMessage)
   messageListeners.taunt = createListener(self, "taunt", processTauntMessage)
   messageListeners.gameResult = createListener(self, "gameResult", processGameResultMessage)
@@ -387,19 +401,76 @@ local function createListeners(self)
   return messageListeners
 end
 
+local LOBBY_MESSAGES = { create_room = true, lobbyStateV2 = true, challengeUpdate = true }
+-- a match also keeps the character select messages for the room's return to it
+local MATCH_KEPT_MESSAGES = shallowcpy(LOBBY_MESSAGES)
+MATCH_KEPT_MESSAGES.menu_state = true
+MATCH_KEPT_MESSAGES.ranked_match_approved = true
+
+-- The messages a state leaves in the queue for a later state instead of dropping them
+local KEPT_BY_STATE = {
+  [states.ONLINE] = {},
+  [states.ROOM] = LOBBY_MESSAGES,
+  [states.INGAME] = MATCH_KEPT_MESSAGES,
+  [states.LEAVING_ROOM] = LOBBY_MESSAGES,
+}
+
+-- The first of MESSAGE_KEYS the message has, nil for a response a request is waiting on
+---@return string?
+local function messageKey(message)
+  for _, key in ipairs(MESSAGE_KEYS) do
+    if message[key] ~= nil then
+      return key
+    end
+  end
+end
+
+-- Hands the received messages to the current state's listeners in the order they arrived, each in the state the
+-- messages before it left the client in.
+-- A message the state has no listener for is dropped as left over from a room or match the client is done with,
+-- unless the state keeps it for a later one in KEPT_BY_STATE.
+---@param self NetClient
+local function processMessages(self)
+  local queue = self.tcpClient.receivedMessageQueue
+  local walkAgain = true
+  while walkAgain and self.listenersByState[self.state] do
+    walkAgain = false
+    local state = self.state
+    for index, message in queue:getMessageIterator() do
+      local key = messageKey(message)
+      if key then
+        local listener = self.listenersByState[state][key]
+        if listener then
+          queue:remove(index)
+          listener:handle(message)
+          if self.state ~= state then
+            -- a message an earlier state kept may be for this one, so the walk starts over from the oldest
+            walkAgain = true
+            break
+          end
+        elseif not KEPT_BY_STATE[state][key] then
+          queue:remove(index)
+        end
+      end
+    end
+  end
+end
+
 ---@class NetClient : Signal
 ---@field tcpClient TcpClient
 ---@field leaderboard table
 ---@field pendingResponses table
 ---@field state NetClientStates
----@field lobbyListeners table
----@field roomListeners table
----@field matchListeners table
----@field messageListeners table
+---@field lobbyListeners table<string, MessageListener>
+---@field roomListeners table<string, MessageListener>
+---@field matchListeners table<string, MessageListener>
+---@field leavingRoomListeners table<string, MessageListener>
+---@field listenersByState table<NetClientStates, table<string, MessageListener>> the listeners each state hands its messages to
 ---@field room BattleRoom?
 ---@field lobbyDataV2 PersonalizedLobbyDataV2
 ---@field serverTimeDelta integer in seconds
 ---@field pings table<PublicPlayerID, PingSummary>? each player's ping in the latest ping update, nil until one arrives
+---@field hasSentErrorReport boolean if this run already sent the server an error report
 ---@overload fun(): NetClient
 local NetClient = class(function(self)
   self.tcpClient = TcpClient()
@@ -407,6 +478,7 @@ local NetClient = class(function(self)
   self.pendingResponses = {}
   self.state = states.OFFLINE
   self.serverTimeDelta = 0
+  self.hasSentErrorReport = false
 
   resetLobbyData(self)
 
@@ -414,10 +486,10 @@ local NetClient = class(function(self)
 
   -- all listeners running while online but not in a room/match
   self.lobbyListeners = {
-    players = messageListeners.players,
     lobbyStateV2 = messageListeners.lobbyStateV2,
     create_room = messageListeners.create_room,
     challengeUpdate = messageListeners.challengeUpdate,
+    spectate_request_granted = messageListeners.spectate_request_granted,
     pingUpdate = messageListeners.pingUpdate,
   }
 
@@ -433,6 +505,8 @@ local NetClient = class(function(self)
 
   -- all listeners running while in a match
   self.matchListeners = {
+    [OPPONENT_INPUT] = messageListeners[OPPONENT_INPUT],
+    [SECOND_OPPONENT_INPUT] = messageListeners[SECOND_OPPONENT_INPUT],
     leave_room = messageListeners.leave_room,
     taunt = messageListeners.taunt,
     -- for spectators catching up to an ongoing match, a match_start acts as a cancel
@@ -443,7 +517,18 @@ local NetClient = class(function(self)
     pingUpdate = messageListeners.pingUpdate,
   }
 
-  self.messageListeners = messageListeners
+  -- all listeners running between asking the server to leave a room and the server confirming it
+  self.leavingRoomListeners = {
+    leave_room = messageListeners.leaveConfirmation,
+    pingUpdate = messageListeners.pingUpdate,
+  }
+
+  self.listenersByState = {
+    [states.ONLINE] = self.lobbyListeners,
+    [states.ROOM] = self.roomListeners,
+    [states.INGAME] = self.matchListeners,
+    [states.LEAVING_ROOM] = self.leavingRoomListeners,
+  }
 
   self.room = nil
 
@@ -460,11 +545,12 @@ NetClient.STATES = states
 
 function NetClient:leaveRoom()
   if self:isConnected() and self.room then
-    self.tcpClient:dropOldInputMessages()
     self.tcpClient:sendRequest(ClientMessages.leaveRoom())
 
-    -- the server sends us back the confirmation that we left the room
-    -- so we reenter ONLINE state via processLeaveRoomMessage, not here
+    -- the server keeps sending messages for the room until it hears of the leave, and none of them may reach the room
+    -- the server's confirmation of the leave puts the client back in ONLINE, see processLeaveConfirmation
+    self.room = nil
+    self:setState(states.LEAVING_ROOM)
   end
 end
 
@@ -546,7 +632,9 @@ end
 function NetClient:sendMatchAbort()
   if self:isConnected() then
     self.tcpClient:sendRequest(ClientMessages.sendMatchAbort())
-    self:setState(states.ROOM)
+    if self.state == states.INGAME then
+      self:setState(states.ROOM)
+    end
   end
 end
 
@@ -577,7 +665,6 @@ function NetClient:registerPlayerUpdates(room)
       listener:subscribe(player, processMenuStateMessage)
     end
   end
-  self.messageListeners.menu_state = listener
   self.roomListeners.menu_state = listener
 end
 
@@ -593,10 +680,16 @@ function NetClient:unregisterPlayerUpdates(room)
   end
 end
 
+-- Sends the server a report of the error that stopped the game; only the first one per run, because an error screen
+-- that fails again would otherwise report every frame
 ---@param errorData table
 ---@param server string
 ---@param port integer
 function NetClient:sendErrorReport(errorData, server, port)
+  if self.hasSentErrorReport then
+    return
+  end
+  self.hasSentErrorReport = true
   if not self:isConnected() then
     self.tcpClient:connectToServer(server, port)
   end
@@ -672,11 +765,9 @@ function NetClient:update()
     return
   end
 
+  processMessages(self)
+
   if self.state == states.ONLINE then
-    for _, listener in pairs(self.lobbyListeners) do
-      listener:listen()
-    end
-    self.tcpClient:dropOldInputMessages()
     if self.pendingResponses.leaderboardUpdate then
       local status, value = self.pendingResponses.leaderboardUpdate:tryGetValue()
       if status == "timeout" then
@@ -689,24 +780,12 @@ function NetClient:update()
       end
     end
     if self.pendingResponses.spectateResponse then
-      local status, value = self.pendingResponses.spectateResponse:tryGetValue()
+      -- the grant is handled with the other messages, in the order it arrived, so all that is left here is the timeout
+      local status = self.pendingResponses.spectateResponse:tryGetValue()
       if status == "timeout" then
         GAME.theme:playCancelSfx()
         self.pendingResponses.spectateResponse = nil
-      elseif status == "received" then
-        self.pendingResponses.spectateResponse = nil
-        spectate2pVsOnlineMatch(self, value)
       end
-    end
-  elseif self.state == states.ROOM then
-    for _, listener in pairs(self.roomListeners) do
-      listener:listen()
-    end
-  elseif self.state == states.INGAME then
-    processInputMessages(self)
-
-    for _, listener in pairs(self.matchListeners) do
-      listener:listen()
     end
   end
 end

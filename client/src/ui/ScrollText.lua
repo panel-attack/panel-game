@@ -46,31 +46,31 @@ function ScrollText:receiveInputsSelf(inputSource, dt)
   local height = self.layoutRect.height
   local labelHeight = self.label.layoutRect.height
   if inputs:isPressedWithRepeat("MenuUp", .25, 0.03) then
-    GAME.theme:playMoveSfx()
+    self:playMoveSfx()
     if labelHeight > height - (SCROLL_STEP + 1) then
       self:setLabelY(math.min((SCROLL_STEP + 1), self.labelY + SCROLL_STEP))
     end
   end
   if inputs:isPressedWithRepeat("MenuDown", .25, 0.03) then
-    GAME.theme:playMoveSfx()
+    self:playMoveSfx()
     if labelHeight > height - (SCROLL_STEP + 1) then
       self:setLabelY(math.max(self.labelY - SCROLL_STEP, (height - (SCROLL_STEP + 1)) - labelHeight))
     end
   end
   if inputs.isDown.MenuLeft then
-    GAME.theme:playMoveSfx()
+    self:playMoveSfx()
     if labelHeight > height - (SCROLL_STEP + 1) then
       self:setLabelY(math.min((SCROLL_STEP + 1), self.labelY + (height - (SCROLL_STEP + 1))))
     end
   end
   if inputs.isDown.MenuRight then
-    GAME.theme:playMoveSfx()
+    self:playMoveSfx()
     if labelHeight > height - (SCROLL_STEP + 1) then
       self:setLabelY(math.max(self.labelY - (height - (SCROLL_STEP + 1)), (height - (SCROLL_STEP + 1)) - labelHeight))
     end
   end
   if inputs.isDown["MenuEsc"] then
-    GAME.theme:playCancelSfx()
+    self:playCancelSfx()
     self:onBack(inputSource)
   end
 end

@@ -183,8 +183,8 @@ function Game:cleanupOldVersions()
         if not tableUtils.first(activeReleaseStream.availableVersions, function(availableVersionInfo)
           return availableVersionInfo.version == installedVersionInfo.version
         end) then
-          -- double check we're not trying to remove the very file that is mounted right now
-          if not string.find(love.filesystem.getRequirePath(), installedVersionInfo.path, 1, true) then
+          -- never remove the version that is running right now, the game still reads its files
+          if installedVersionInfo.version ~= self.updater.activeVersion.version then
             toBeCleared[#toBeCleared+1] = installedVersionInfo
           end
         end
@@ -409,6 +409,7 @@ function Game:onFileDropped(file)
 
   local replay = ReplayBrowser.createFromReplayFile(file)
   if not replay then
+    self.theme:playCancelSfx()
     return false
   end
 
@@ -612,6 +613,15 @@ function Game:toggleFullscreen()
   self:updateCanvasPositionAndScale(newWidth, newHeight)
 end
 
+-- Returns the largest scale that shows the whole canvas in the window.
+---@param windowWidth number
+---@param windowHeight number
+---@return number scale
+function Game:getFitScale(windowWidth, windowHeight)
+  local canvasWidth, canvasHeight = self.globalCanvas:getDimensions()
+  return math.min(windowWidth / canvasWidth, windowHeight / canvasHeight)
+end
+
 -- Updates the scale and position values to use up the right size of the window based on the user's settings.
 ---@return boolean positionChanged
 ---@return boolean scaleChanged
@@ -637,24 +647,15 @@ function Game:updateCanvasPositionAndScale(newWindowWidth, newWindowHeight)
   self.canvasY = math.floor(newWindowHeight / 2)
 
   if config.gameScaleType == "fit" then
-    local w, h
-    local canvasWidth, canvasHeight = self.globalCanvas:getDimensions()
-    if newWindowHeight / canvasHeight > newWindowWidth / canvasWidth then
-      w = newWindowWidth
-      h = canvasHeight * newWindowWidth / canvasWidth
-    else
-      w = canvasWidth * newWindowHeight / canvasHeight
-      h = newWindowHeight
-    end
-    self.canvasXScale = w / canvasWidth
-    self.canvasYScale = h / canvasHeight
+    self.canvasXScale = self:getFitScale(newWindowWidth, newWindowHeight)
+    self.canvasYScale = self.canvasXScale
   elseif config.gameScaleType == "fixed" then
     self.canvasXScale = config.gameScaleFixedValue
     self.canvasYScale = config.gameScaleFixedValue
   elseif config.gameScaleType == "auto" then
     local availableScales = shallowcpy(self.automaticScales)
-    -- use a default minimum for automatic if the window gets too small
-    local newScale = 0.5
+    -- a window too small for every step fits the canvas instead, as on phones whose system bars leave less than 720 pixels
+    local newScale = self:getFitScale(newWindowWidth, newWindowHeight)
     for i= #availableScales, 1, -1 do
       local scale = availableScales[i]
       if (newWindowWidth >= self.globalCanvas:getWidth() * scale and newWindowHeight >= self.globalCanvas:getHeight() * scale) then
@@ -672,7 +673,7 @@ function Game:updateCanvasPositionAndScale(newWindowWidth, newWindowHeight)
   return positionChanged, scaleChanged
 end
 
--- Reloads the canvas and all images / fonts for the new game scale
+-- Reloads the canvas and all images / fonts for the new game scale, freeing the old ones first where nothing else holds them
 function Game:refreshCanvasAndImagesForNewScale()
   if themes == nil or themes[config.theme] == nil then
     return -- EARLY RETURN, assets haven't loaded the first time yet
@@ -681,7 +682,11 @@ function Game:refreshCanvasAndImagesForNewScale()
 
   self:drawLoadingString(loc("ld_characters"))
 
-  self.globalCanvas = love.graphics.newCanvas(GAME.globalCanvas:getWidth(), GAME.globalCanvas:getHeight(), {dpiscale=self:newCanvasSnappedScale()})
+  -- frees what the last reload left behind so the new images fit in graphics memory
+  collectgarbage("collect")
+  local previousCanvas = self.globalCanvas
+  self.globalCanvas = love.graphics.newCanvas(previousCanvas:getWidth(), previousCanvas:getHeight(), {dpiscale=self:newCanvasSnappedScale()})
+  previousCanvas:release()
   -- We need to reload all assets and fonts to get the new scaling info and filters
 
   -- Reload theme to get the new resolution assets
@@ -689,6 +694,8 @@ function Game:refreshCanvasAndImagesForNewScale()
   themes[config.theme]:final_init()
   -- Reload stages to get the new resolution assets
   stages_reload_graphics()
+  -- frees the theme and stage images just replaced before the panel sheets are drawn
+  collectgarbage("collect")
   -- Reload panels to get the new resolution assets
   PanelLoader.initPanels()
   -- Reload characters to get the new resolution assets

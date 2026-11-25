@@ -54,14 +54,14 @@ end
 function LobbyChallengeButton:onClick()
   if self.challengeState == LobbyChallengeButton.challengeStates.PROPOSING then
     GAME.netClient:withdrawChallengeForId(self.playerId, self.gameModeId)
-    GAME.theme:playValidationSfx()
+    self:playValidationSfx()
   else
     if GAME.localPlayer.settings.style ~= GameModes.Styles.MODERN then
       GAME.localPlayer:setStyle(GameModes.Styles.MODERN)
       GAME.netClient:sendPlayerSettings(GAME.localPlayer)
     end
     GAME.netClient:challengePlayerById(self.playerId, self.gameModeId)
-    GAME.theme:playValidationSfx()
+    self:playValidationSfx()
   end
 end
 

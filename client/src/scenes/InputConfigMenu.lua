@@ -98,7 +98,7 @@ function InputConfigMenu:currentKeyLabelForIndex(index)
 end
 
 function InputConfigMenu:updateKey(key, pressedKey, index)
-  GAME.theme:playValidationSfx()
+  self:playValidationSfx()
   local config = inputManager.inputConfigurations[self.configIndex]
   inputManager:changeKeyBindingOnInputConfiguration(config, key, pressedKey)
   local keyDisplayName = self:getKeyDisplayName(pressedKey)
@@ -147,7 +147,7 @@ function InputConfigMenu:setAllKeys()
 end
 
 function InputConfigMenu:setKeyStart(key)
-  GAME.theme:playValidationSfx()
+  self:playValidationSfx()
   self.key = key
   self.index = nil
   for i, k in ipairs(consts.KEY_NAMES) do
@@ -169,7 +169,7 @@ function InputConfigMenu:setKeyStart(key)
 end
 
 function InputConfigMenu:setAllKeysStart()
-  GAME.theme:playValidationSfx()
+  self:playValidationSfx()
   self.index = 1
   local menuItemIndex = self.index + 1 
   local menuItem = self.menu.menuItems[menuItemIndex]
@@ -184,7 +184,7 @@ function InputConfigMenu:setAllKeysStart()
 end
 
 function InputConfigMenu:clearAllInputs()
-  GAME.theme:playValidationSfx()
+  self:playValidationSfx()
   local config = inputManager.inputConfigurations[self.configIndex]
   inputManager:clearKeyBindingsOnInputConfiguration(config)
   self:refreshUI()
@@ -192,9 +192,9 @@ function InputConfigMenu:clearAllInputs()
 end
 
 function InputConfigMenu:resetToDefault(menuOptions)
-  GAME.theme:playValidationSfx()
+  self:playValidationSfx()
   inputManager:setupDefaultKeyConfigurations()
-  GAME.theme:playMoveSfx()
+  self:playMoveSfx()
   self.slider:setValue(1)
   self.configIndex = 1
   self:refreshUI()
@@ -244,7 +244,7 @@ function InputConfigMenu:createExitMenuFunction()
       return
     end
 
-    GAME.theme:playValidationSfx()
+    self:playValidationSfx()
     if inputManager.hasUnsavedChanges then
       inputManager:saveInputConfigurationMappings()
     end

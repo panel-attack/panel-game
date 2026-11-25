@@ -37,6 +37,7 @@ end
 ---@field assets IngameAssetPack
 ---@field renderIndex integer determines the position of the stack and how some elements are rendered
 ---@field player_number integer used for display ordering
+---@field combo_chain_play {type: integer, size: integer}? the attack whose character sound plays with the frame's other sounds
 
 ---@class ClientStack
 local ClientStack = class(
@@ -74,6 +75,7 @@ function(self, args)
   self.portraitFade = 0
 
   self.danger_music = false
+  self.combo_chain_play = nil
 
   Signal.turnIntoEmitter(self)
   self:createSignal("dangerMusicChanged")
@@ -473,6 +475,25 @@ function ClientStack.attackSoundInfoForMatch(isChainLink, chainSize, comboSize, 
   return nil
 end
 
+-- Queues the character sound for an attack to play with the frame's other sounds, if the attack is big enough for one
+---@param isChainLink boolean
+---@param chainSize integer
+---@param comboSize integer
+---@param metalCount integer
+function ClientStack:queueAttackSoundEffect(isChainLink, chainSize, comboSize, metalCount)
+  if self:canPlaySfx() then
+    self.combo_chain_play = self.attackSoundInfoForMatch(isChainLink, chainSize, comboSize, metalCount)
+  end
+end
+
+-- Plays the character sound of the queued attack, if there is one
+function ClientStack:playQueuedAttackSound()
+  if self.combo_chain_play then
+    self.character:playAttackSfx(self.combo_chain_play)
+    self.combo_chain_play = nil
+  end
+end
+
 ---@param doCountdown boolean if the stack should have a countdown at the beginning
 function ClientStack:setCountdown(doCountdown)
   self.engine:setCountdown(doCountdown)
@@ -531,6 +552,11 @@ end
 
 function ClientStack:runGameOver()
   error("did not implement runGameOver")
+end
+
+---@return boolean
+function ClientStack:canPlaySfx()
+  error("did not implement canPlaySfx")
 end
 
 ---@param matchEnded boolean?

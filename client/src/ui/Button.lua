@@ -31,7 +31,7 @@ Button.WIDTH_PADDING = 3
 Button.HEIGHT_PADDING = 3
 
 function Button:onClick()
-  GAME.theme:playValidationSfx()
+  self:playValidationSfx()
 end
 
 function Button:onTouch(x, y)

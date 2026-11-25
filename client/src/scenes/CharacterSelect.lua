@@ -240,7 +240,7 @@ function CharacterSelect:createReadyButton()
       player = GAME.localPlayer
     end
     player:setWantsReady(not player.settings.wantsReady)
-    GAME.theme:playValidationSfx()
+    self:playValidationSfx()
   end
   readyButton.onSelect = readyButton.onClick
 
@@ -255,7 +255,7 @@ function CharacterSelect:createLeaveButton()
     backgroundColor = {1, 1, 1, 0},
     outlineColor = {1, 1, 1, 1},
     onClick = function()
-        GAME.theme:playCancelSfx()
+        self:playCancelSfx()
         self:leave()
       end
   })
@@ -469,9 +469,11 @@ function CharacterSelect:getCharacterButtons()
             player:setStage(character.stage)
           end
         end
-        character:playSelectionSfx()
+        if self:isOnScreen() then
+          character:playSelectionSfx()
+        end
       else
-        GAME.theme:playValidationSfx()
+        self:playValidationSfx()
       end
 
       player:setCharacter(selfElement.characterId)
@@ -639,7 +641,7 @@ function CharacterSelect:createCursor(grid, player)
   player:connectSignal("wantsReadyChanged", cursor, cursor.setRapidBlinking)
 
   cursor.escapeCallback = function()
-    GAME.theme:playCancelSfx()
+    self:playCancelSfx()
     if cursor.selectedGridPos.x == 9 and cursor.selectedGridPos.y == 6 then
       self:leave()
     elseif player.settings.wantsReady then
@@ -716,7 +718,7 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
     tickLength = imageWidth,
     value = player.settings.level,
     onValueChange = function(s)
-      GAME.theme:playMoveSfx()
+      s:playMoveSfx()
     end,
   })
 
@@ -736,7 +738,7 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
       if self.onBackCallback then
         self:onBackCallback()
       end
-      GAME.theme:playCancelSfx()
+      self:playCancelSfx()
       self:yieldFocus(inputSource)
     end
 
@@ -744,7 +746,7 @@ function CharacterSelect:createLevelSlider(player, imageWidth, height)
       if self.onSelectCallback then
         self:onSelectCallback()
       end
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
       self:yieldFocus(inputSource)
     end
   end
@@ -806,7 +808,7 @@ function CharacterSelect:createRankedSelection(player, width)
 
   local rankedSelector = ui.BoolSelector({startValue = player.settings.wantsRanked, isEnabled = player.isLocal})
   rankedSelector.onValueChange = function(boolSelector, value)
-    GAME.theme:playValidationSfx()
+    boolSelector:playValidationSfx()
     player:setWantsRanked(value)
   end
 
@@ -1024,7 +1026,7 @@ function CharacterSelect:createSpeedSlider(player, height, min)
     value = player.settings.speed,
     onValueChange = function(slider)
       player:setSpeed(slider.value)
-      GAME.theme:playMoveSfx()
+      slider:playMoveSfx()
     end,
   })
   speedSlider:setFocusable(true)
@@ -1037,7 +1039,7 @@ function CharacterSelect:createSpeedSlider(player, height, min)
   uiElement:addChild(speedSlider)
   uiElement.onFocus = function(self, inputSource)
     self:forwardFocus(self.speedSlider, inputSource, function()
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
     end)
   end
 
@@ -1071,7 +1073,7 @@ function CharacterSelect:createDifficultyCarousel(player, height, getPresetFunc)
     if getPresetFunc then
       player:setLevelData(getPresetFunc(selectedPassenger.id))
     end
-    GAME.theme:playMoveSfx()
+    carousel:playMoveSfx()
   end
 
   -- to update the UI if code gets changed from the backend (e.g. network messages)
@@ -1098,7 +1100,7 @@ function CharacterSelect:updateSelf(dt)
   end
   if self.battleRoom and self.battleRoom.spectating then
     if input.isDown["MenuEsc"] then
-      GAME.theme:playCancelSfx()
+      self:playCancelSfx()
       self:leave()
     end
   end

@@ -461,7 +461,14 @@ Where all the network magic actually happens. Uses luasocket.
 
 ### MessageListener
 
-Listen to one specific server message on the TcpClient's incoming message queue.
+Hands the messages of one server message type to its subscribers.
+
+### NetClient
+
+Hands the server messages on the TcpClient's incoming message queue to MessageListeners in the order they arrived.  
+Its state (lobby, room, match, or leaving a room) decides for each message whether it is handled, kept for a later state,  
+or dropped as left over from a room or match the client is done with.  
+Responses to requests stay in the queue for the Response waiting on them.
 
 ## common/network
 

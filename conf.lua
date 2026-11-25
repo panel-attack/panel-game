@@ -3,6 +3,7 @@
 require("client.src.config")
 -- Require developer here as this is basically the first thing to load in love 2D
 require("client.src.developer")
+local RendererSetting = require("client.src.graphics.RendererSetting")
 
 -- Intentional override
 ---@diagnostic disable-next-line: duplicate-set-field
@@ -25,6 +26,9 @@ function love.conf(t)
     t.window.displayindex = config.display        -- Index of the monitor to show the window in (number)
     if t.graphics then
       t.graphics.gammacorrect = false
+      t.graphics.renderers = RendererSetting.loveRenderers(config.renderer)
+      -- love.restart is set when the game restarted itself after the renderer stopped working
+      t.graphics.excluderenderers = RendererSetting.excludedRenderers(love.restart)
     else
       -- older versions of love12 had this defined here
       ---@diagnostic disable-next-line: inject-field

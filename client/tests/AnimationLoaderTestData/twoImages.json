@@ -1,0 +1,21 @@
+{
+  "drawables": [
+    {
+      "id": "First",
+      "filePath": "test_image",
+      "animationTracks": [
+        {"steps": [{"animateProperties": {"alpha": 0.5}, "durationSeconds": 1, "easeType": "linear"}]}
+      ]
+    },
+    {
+      "id": "Second",
+      "filePath": "second_image",
+      "position": {"x": 64, "y": 0}
+    },
+    {
+      "id": "Scrolling",
+      "filePath": "second_image_repeated",
+      "wrap": "repeat"
+    }
+  ]
+}

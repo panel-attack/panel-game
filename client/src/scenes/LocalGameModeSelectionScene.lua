@@ -23,18 +23,20 @@ function LocalGameModeSelectionScene:load(sceneParams)
     ui.MenuItem.createButtonMenuItem("rp_browser_info_time_trial", nil, nil, function ()
       GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset(GameModes.IDs.TWO_PLAYER_TIME_ATTACK), TimeAttackGame)
       if GAME.battleRoom then
-        GAME.theme:playValidationSfx()
+        self:playValidationSfx()
         GAME.navigationStack:push(CharacterSelect2p({battleRoom = GAME.battleRoom}))
       end
     end),
     ui.MenuItem.createButtonMenuItem("vs", nil, nil, function ()
       GAME.battleRoom = BattleRoom.createLocalFromGameMode(GameModes.getPreset(GameModes.IDs.TWO_PLAYER_VS), GameBase)
       if GAME.battleRoom then
-        GAME.theme:playValidationSfx()
+        self:playValidationSfx()
         GAME.navigationStack:push(CharacterSelect2p({battleRoom = GAME.battleRoom}))
       end
     end),
-    ui.MenuItem.createButtonMenuItem("back", nil, nil, Scene.pop)
+    ui.MenuItem.createButtonMenuItem("back", nil, nil, function()
+      self:pop()
+    end)
   }
 
   self.menu = ui.Menu.createCenteredMenu(menuItems)

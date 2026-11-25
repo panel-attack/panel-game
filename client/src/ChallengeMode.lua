@@ -5,7 +5,7 @@ local ChallengeRun = require("client.src.ChallengeRun")
 local GameModes = require("common.data.GameModes")
 local levelPresets = require("common.data.LevelPresets")
 local Game1pChallenge = require("client.src.scenes.Game1pChallenge")
-require("client.src.BattleRoom")
+local BattleRoom = require("client.src.BattleRoom")
 local save = require("client.src.save")
 local fileUtils = require("client.src.FileUtils")
 

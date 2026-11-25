@@ -254,19 +254,19 @@ function PuzzleEditorScene:createEditorControls()
   controls[#controls + 1] = self.palettePanel
 
   controls[#controls + 1] = ui.TextButton({
-    label = ui.Label({text = "Clear Solution"}),
+    label = ui.Label({text = "pz_editor_clear_solution"}),
     layoutRules = {sizing = Layout.fixedSize(100, 25)},
     onClick = function() self:clearSolution() end
   })
 
   controls[#controls + 1] = ui.TextButton({
-    label = ui.Label({text = "Save Puzzle"}),
+    label = ui.Label({text = "pz_editor_save_puzzle"}),
     layoutRules = {sizing = Layout.fixedSize(100, 25)},
     onClick = function() self:savePuzzle() end
   })
 
   controls[#controls + 1] = ui.TextButton({
-    label = ui.Label({text = "Exit Editor"}),
+    label = ui.Label({text = "pz_editor_exit"}),
     layoutRules = {sizing = Layout.fixedSize(100, 25)},
     onClick = function() self:exitEditor() end
   })
@@ -301,7 +301,7 @@ function PuzzleEditorScene:createPanelButtonSmall(color, size)
         self.garbageMode = false
         self.shockGarbageMode = false
         self:updatePaletteSelection()
-        GAME.theme:playValidationSfx()
+        self:playValidationSfx()
       end
     })
   elseif color == 9 then
@@ -318,7 +318,7 @@ function PuzzleEditorScene:createPanelButtonSmall(color, size)
         self.garbageMode = false
         self.shockGarbageMode = false
         self:updatePaletteSelection()
-        GAME.theme:playValidationSfx()
+        self:playValidationSfx()
       end
     })
   else
@@ -336,7 +336,7 @@ function PuzzleEditorScene:createPanelButtonSmall(color, size)
         self.garbageMode = false
         self.shockGarbageMode = false
         self:updatePaletteSelection()
-        GAME.theme:playValidationSfx()
+        self:playValidationSfx()
       end
     })
   end
@@ -353,7 +353,7 @@ function PuzzleEditorScene:createCursorButton(size)
       self.garbageMode = false
       self.shockGarbageMode = false
       self:updatePaletteSelection()
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
     end
   })
 end
@@ -370,7 +370,7 @@ function PuzzleEditorScene:createGarbageButton(size)
       self.shockGarbageMode = false
       self.cursorMode = false
       self:updatePaletteSelection()
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
     end
   })
 end
@@ -418,7 +418,7 @@ function PuzzleEditorScene:createShockGarbageButton(size)
       self.garbageMode = false
       self.cursorMode = false
       self:updatePaletteSelection()
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
     end
   })
 end

@@ -55,8 +55,8 @@ Lobby.name = "Lobby"
 -- exit --
 ----------
 
-local function exitMenu()
-  GAME.theme:playCancelSfx()
+local function exitMenu(backButton)
+  backButton:playCancelSfx()
   GAME.netClient:logout()
   GAME.navigationStack:pop()
 end
@@ -161,7 +161,7 @@ end
 -----------------
 
 function Lobby:toggleLeaderboard()
-  GAME.theme:playMoveSfx()
+  self:playMoveSfx()
   if not self.leaderboard.isVisible then
     self.leaderboardToggleLabel:setText("lb_hide_board")
     GAME.netClient:requestLeaderboard(GameModes.IDs.TWO_PLAYER_VS)
@@ -187,7 +187,7 @@ function Lobby:requestGameFunction(publicId, gameModeId)
       GAME.netClient:sendPlayerSettings(GAME.localPlayer)
     end
     GAME.netClient:challengePlayerById(publicId, gameModeId)
-    GAME.theme:playValidationSfx()
+    self:playValidationSfx()
   end
 end
 
@@ -197,7 +197,7 @@ end
 function Lobby:requestSpectateFunction(room)
   return function()
     GAME.netClient:requestSpectate(room.roomNumber)
-    GAME.theme:playValidationSfx()
+    self:playValidationSfx()
   end
 end
 
@@ -253,7 +253,7 @@ function Lobby:createPlayerButtons(personalizedLobbyData)
         onClick =
           function(button)
             self:openPlayerSubMenu(publicId, button)
-            GAME.theme:playValidationSfx()
+            self:playValidationSfx()
           end
         })
       button.lobbyType = "player"
@@ -393,7 +393,7 @@ function Lobby:openPlayerSubMenu(playerId, button)
     label = ui.Label({text = "back"}),
     layoutRules = SUB_MENU_BUTTON_RULES,
     onClick = function()
-      GAME.theme:playCancelSfx()
+      self:playCancelSfx()
       self.lobbyMenu:unfocusChild(InputSource.anyPlayer)
     end})
 

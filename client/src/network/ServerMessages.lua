@@ -181,6 +181,7 @@ function ServerMessages.sanitizeServerMessage(message)
     return
     {
       spectate_request_granted = true,
+      roomNumber = message.content.roomNumber,
       stageId = message.content.stage,
       ranked = message.content.ranked,
       winCounts = winCounts,

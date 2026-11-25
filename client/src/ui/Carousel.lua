@@ -72,7 +72,7 @@ function Carousel.removeSelectedPassenger(self)
 end
 
 function Carousel.moveToNextPassenger(self, directionSign)
-  GAME.theme:playMoveSfx()
+  self:playMoveSfx()
   self.passengers[self.selectedId].uiElement:setVisibility(false)
   self.selectedId = wrap(1, self.selectedId + directionSign, #self.passengers)
   self.passengers[self.selectedId].uiElement:setVisibility(true)
@@ -138,11 +138,11 @@ function Carousel:receiveInputsSelf(inputSource, dt)
   elseif inputs:isPressedWithRepeat("Right", 0.25, 0.15) then
     self:moveToNextPassenger(1)
   elseif inputs.isDown["Swap1"] or inputs.isDown["Start"] then
-    GAME.theme:playValidationSfx()
+    self:playValidationSfx()
     self:onSelect()
     self:yieldFocus(inputSource)
   elseif inputs.isDown["Swap2"] or inputs.isDown["Escape"] then
-    GAME.theme:playCancelSfx()
+    self:playCancelSfx()
     self:onBack()
     self:yieldFocus(inputSource)
   end

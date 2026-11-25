@@ -55,15 +55,15 @@ function BoolSelector:receiveInputsSelf(inputSource, dt)
     (input:isPressedWithRepeat("Down") and self.vertical) then
       self:setValue(false)
     elseif input.isDown["Swap1"] then
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
       self:yieldFocus(inputSource)
     elseif input.isDown["Swap2"] then
-      GAME.theme:playCancelSfx()
+      self:playCancelSfx()
       self:yieldFocus(inputSource)
     end
   else 
     if input.isDown["Swap1"] then
-      GAME.theme:playValidationSfx()
+      self:playValidationSfx()
       self:setValue(not self.value)
     end
   end

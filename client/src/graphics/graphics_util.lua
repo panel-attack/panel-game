@@ -372,6 +372,14 @@ function GraphicsUtil.setColor(r, g, b, a)
     end
 end
 
+-- Whether the blend and alpha modes are LÖVE's defaults, which draw an image over what's below by its alpha
+---@param blendMode love.BlendMode
+---@param alphaMode love.BlendAlphaMode
+---@return boolean
+function GraphicsUtil.isDefaultBlendMode(blendMode, alphaMode)
+  return blendMode == "alpha" and alphaMode == "alphamultiply"
+end
+
 -- temporary work around to drawing clearer text until we use better fonts
 -- draws multiple copies of the same text slightly offset from each other
 -- to simultate thickness
@@ -453,6 +461,8 @@ function GraphicsUtil.renderToTexture(width, height, drawFunc, dpiscale, filterM
     if filterMin and filterMag then
       image:setFilter(filterMin, filterMag)
     end
+    imageData:release()
+    canvas:release()
 
     return image
   else
