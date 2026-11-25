@@ -66,6 +66,8 @@ local allTests = {
   "client.tests.LanguageSelectSetupTests",
   "client.tests.MainMenuTests",
   "client.tests.TransitionTests",
+  "client.tests.TextureAtlasTests",
+  "client.tests.AnimationBakerTests",
   "common.tests.engine.PanelGenTests",
   "common.tests.engine.HealthTests",
   "common.tests.engine.GarbageQueueRollbackTests",

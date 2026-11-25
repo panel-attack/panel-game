@@ -1,0 +1,20 @@
+{
+  "drawables": [
+    {
+      "id": "Left",
+      "filePath": "test_image",
+      "position": {
+        "x": 1250,
+        "y": 0
+      }
+    },
+    {
+      "id": "Right",
+      "filePath": "second_image",
+      "position": {
+        "x": 1260,
+        "y": 10
+      }
+    }
+  ]
+}
