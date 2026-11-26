@@ -594,7 +594,7 @@ function OptionsMenu:load()
 end
 
 function OptionsMenu:updateSelf(dt)
-  self.backgroundImage:update(dt)
+  self.backgroundImage:play(self.animator)
   self.menus[self.activeMenuName]:receiveInputs(InputSource.anyPlayer, dt)
 end
 

@@ -82,7 +82,7 @@ function SetNameMenu:confirmName()
 end
 
 function SetNameMenu:update(dt)
-  self.backgroundImg:update(dt)
+  self.backgroundImg:play(self.animator)
 
   if input.allKeys.isDown["return"] then
     self:confirmName()

@@ -166,16 +166,96 @@ local function testADetachedElementIsLaidOutOnlyWhenAskedTo()
   logger.trace("passed test testADetachedElementIsLaidOutOnlyWhenAskedTo")
 end
 
-local function testAChangedChildOffsetIsPickedUp()
+-- Returns a 100 by 20 column that clips vertically, holding three 30 by 10 children, laid out
+---@return UiElement column
+---@return UiElement[] children
+local function scrollingColumn()
   local column = element({layoutDirection = "topToBottom", sizing = fixedSize(100, 20), clip = {vertical = true}})
-  local child = element({sizing = fixedSize(30, 10)})
-  column:addChild(child)
+  local children = {}
+  for i = 1, 3 do
+    children[i] = element({sizing = fixedSize(30, 10)})
+    column:addChild(children[i])
+  end
   column:layOut()
-  column:setLayoutRule("clip", {vertical = true, childOffset = {y = -6}})
+  return column, children
+end
+
+local function screenY(uiElement)
+  local _, y = uiElement:getScreenPos()
+  return y
+end
+
+local function testScrollingMovesTheFlowWithoutALayout()
+  local column, children = scrollingColumn()
+  local badge = element({sizing = fixedSize(6, 6), floating = Layout.floatAt("leftTop")})
+  column:addChild(badge)
   column:layOut()
-  local _, y = child:getScreenPos()
-  assert(y == -6, "y " .. y)
-  logger.trace("passed test testAChangedChildOffsetIsPickedUp")
+  local solves = countSolves(function()
+    column:setScroll(0, -6)
+    column:layOut()
+  end)
+  assert(solves == 0 and not column.layoutDirty, "scrolling solved the layout " .. solves .. " times")
+  assert(children[1].layoutRect.y == 0 and screenY(children[1]) == -6, "the first child is at " .. screenY(children[1]))
+  assert(screenY(badge) == 0, "the floating child moved to " .. screenY(badge))
+  assert(children[3]:inBounds(10, 15) and not children[2]:inBounds(10, 15), "touches don't follow the scroll")
+  logger.trace("passed test testScrollingMovesTheFlowWithoutALayout")
+end
+
+local function testScrollStopsAtTheEndsOfTheContent()
+  local column = scrollingColumn()
+  column:setScroll(0, -300)
+  assert(column.scrollY == -10, "scrolled down to " .. column.scrollY)
+  column:scrollBy(0, 300)
+  assert(column.scrollY == 0, "scrolled up to " .. column.scrollY)
+  column:setScroll(-8, 0)
+  assert(column.scrollX == 0, "scrolled to " .. column.scrollX .. " along the axis it doesn't clip")
+  logger.trace("passed test testScrollStopsAtTheEndsOfTheContent")
+end
+
+local function testScrollStaysOnThePixelGrid()
+  local column = scrollingColumn()
+  column:setScroll(0, -3.2)
+  assert(column.scrollY == -4, "scrolled to " .. column.scrollY)
+  logger.trace("passed test testScrollStaysOnThePixelGrid")
+end
+
+local function testAnElementThatDoesNotClipDoesNotScroll()
+  local column = element({layoutDirection = "topToBottom", sizing = fixedSize(100, 20)})
+  column:addChild(element({sizing = fixedSize(30, 50)}))
+  column:layOut()
+  column:setScroll(0, -6)
+  assert(column.scrollY == 0, "scrolled to " .. column.scrollY)
+  logger.trace("passed test testAnElementThatDoesNotClipDoesNotScroll")
+end
+
+local function testAChildIsScrolledIntoViewByAsLittleAsItTakes()
+  local column, children = scrollingColumn()
+  column:scrollChildIntoView(children[3])
+  assert(column.scrollY == -10, "scrolled to " .. column.scrollY .. " for the last child")
+  column:scrollChildIntoView(children[2])
+  assert(column.scrollY == -10, "scrolled to " .. column.scrollY .. " for a child already in view")
+  column:scrollChildIntoView(children[1])
+  assert(column.scrollY == 0, "scrolled to " .. column.scrollY .. " for the first child")
+  logger.trace("passed test testAChildIsScrolledIntoViewByAsLittleAsItTakes")
+end
+
+local function testAChildAddedSinceTheLayoutIsScrolledIntoViewByTheNextOne()
+  local column = scrollingColumn()
+  local added = element({sizing = fixedSize(30, 10)})
+  column:addChild(added)
+  column:scrollChildIntoView(added)
+  column:layOut()
+  assert(column.scrollY == -20 and screenY(added) == 10, "scrolled to " .. column.scrollY)
+  logger.trace("passed test testAChildAddedSinceTheLayoutIsScrolledIntoViewByTheNextOne")
+end
+
+local function testTheLayoutKeepsTheScrollWithinContentThatShrank()
+  local column, children = scrollingColumn()
+  column:setScroll(0, -10)
+  children[3]:detach()
+  column:layOut()
+  assert(column.scrollY == 0, "scrolled to " .. column.scrollY)
+  logger.trace("passed test testTheLayoutKeepsTheScrollWithinContentThatShrank")
 end
 
 local function testOnlyClaysRulesCanBeSet()
@@ -247,7 +327,13 @@ testAnUnchangedTreeIsNotSolvedAgain()
 testManyChangesAreSolvedOnce()
 testInBoundsUsesTheLayoutRect()
 testADetachedElementIsLaidOutOnlyWhenAskedTo()
-testAChangedChildOffsetIsPickedUp()
+testScrollingMovesTheFlowWithoutALayout()
+testScrollStopsAtTheEndsOfTheContent()
+testScrollStaysOnThePixelGrid()
+testAnElementThatDoesNotClipDoesNotScroll()
+testAChildIsScrolledIntoViewByAsLittleAsItTakes()
+testAChildAddedSinceTheLayoutIsScrolledIntoViewByTheNextOne()
+testTheLayoutKeepsTheScrollWithinContentThatShrank()
 testOnlyClaysRulesCanBeSet()
 testOnlyClaysRulesCanBeGiven()
 testSettingARuleLeavesTheGivenRulesAsTheyWere()

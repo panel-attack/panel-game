@@ -22,6 +22,8 @@ local LAYOUT_RULE_KEYS = {
 ---@field onDrag function? touch callback for when the mouse touching the element is dragged across the screen
 ---@field onRelease function? touch callback for when the mouse touching the element is released
 ---@field onHold function? touch callback for when a touch is held on the element for a longer duration
+---@field onScroll fun(self: UiElement, dx: number, dy: number)? takes the mouse wheel's movement over the element, in
+--- notches, in place of scrolling it
 ---@field isFocusable boolean true if selecting this element focuses it (see setFocusable)
 ---@field focusedChild table<InputSource, UiElement> per input source, the element this one has handed its inputs to
 ---@field focusCallbacks table<InputSource, function?> per input source, what to run when the focused child gives its focus back
@@ -35,6 +37,12 @@ local LAYOUT_RULE_KEYS = {
 ---@field layoutRules LayoutRules the element's LayoutRules: how it is sized and placed and how it places its children.
 --- It is in its parent's flow unless the rules say it floats. The table and the tables in it are never changed, so
 --- many elements can share them; setLayoutRule replaces the table with a changed copy.
+---@field scrollX number how far the children in the flow are drawn and touched from where the layout placed them, 0 or
+--- negative to scroll them left; only an element whose rules clip horizontally scrolls
+---@field scrollY number the same vertically, negative to scroll them up
+---@field childToScrollIntoView UiElement? the child the next layout scrolls into view, asked for while the layout was out of date
+---@field areaToScrollIntoView LayoutRect? the area the next layout scrolls into view, asked for while the layout was out of date
+---@field states table<string, boolean> named flags, such as pressed or selected, that the element's drawing shows
 ---@field [any] any
 
 ---@class UiElementOptions
@@ -43,14 +51,16 @@ local LAYOUT_RULE_KEYS = {
 ---@field layoutRules LayoutRules? the element's own LayoutRules: how it is sized and placed and how it places its children
 
 local uniqueId = 0
+local NO_PADDING = {}
 
 -- The base class of every UI element. An element's place and size come only from the layout solver (see LayoutSolver):
 -- code reads them from layoutRect, the last layout's result, and never computes or writes them itself.
 -- An element sits in its parent's flow unless its rules make it float; only what overlaps others or sits outside the
 -- flow should float.
--- Whatever owns a tree's root, like Game, a scene or a transition, lays the root out once a frame between the update and
--- the draw, and only a tree that changed since is solved again. Change rules or children in response to an event (input,
+-- A layout solves only a tree that changed since the last one. Change rules or children in response to an event (input,
 -- a data change, a new screen), never every frame, and never during a layout or a draw.
+-- An element whose rules clip scrolls the children in its flow: setScroll and scrollChildIntoView move where they are
+-- drawn and touched inside its rect and never lay anything out.
 -- Drawing reads state and never changes it; an animation moves what is drawn rather than the layout, and starts once a
 -- layout has given it any size it depends on.
 ---@class UiElement
@@ -84,7 +94,11 @@ local UIElement = class(
     self.layoutRect = {x = 0, y = 0, width = 0, height = 0}
     self.layoutState = {}
     self.resizePending = false
+    self.scrollX = 0
+    self.scrollY = 0
     self:markLayoutDirty()
+
+    self.states = {}
   end
 )
 
@@ -162,7 +176,8 @@ end
 function UIElement:onResize()
 end
 
--- Called by the layout solver with the element's final size; runs onResize when the element was added or its size changed
+-- Called by the layout solver with the element's final size, once every rect is placed; runs onResize when the element
+-- was added or its size changed, and keeps the scroll of an element that clips within its new content
 ---@param width number
 ---@param height number
 function UIElement:onLayoutSized(width, height)
@@ -170,6 +185,17 @@ function UIElement:onLayoutSized(width, height)
     self.sizedWidth, self.sizedHeight = width, height
     self.resizePending = false
     self:onResize()
+  end
+  if self.layoutRules.clip then
+    local child = self.childToScrollIntoView
+    local area = self.areaToScrollIntoView
+    if child and child.parent == self then
+      self:scrollChildIntoView(child)
+    elseif area then
+      self:scrollAreaIntoView(area.x, area.y, area.width, area.height)
+    else
+      self:setScroll(self.scrollX, self.scrollY)
+    end
   end
 end
 
@@ -203,6 +229,123 @@ function UIElement:layOut()
   end
 end
 
+-- Returns whether the rects of the element's tree are the ones a layout placed for the tree as it is now
+---@return boolean
+function UIElement:hasCurrentLayout()
+  local root = self:getRoot()
+  return not root.layoutDirty or root.isBeingLaidOut == true
+end
+
+-- Returns how far the element can scroll along each axis: how far the children in its flow and its padding after them
+-- reach past its rect along the axes it clips
+---@return number maxX
+---@return number maxY
+function UIElement:getMaxScroll()
+  local clip = self.layoutRules.clip
+  if not clip then
+    return 0, 0
+  end
+  local reachX = 0
+  local reachY = 0
+  for _, child in ipairs(self.children) do
+    if child.layoutRules.floating == nil then
+      local childRect = child.layoutRect
+      reachX = math.max(reachX, childRect.x + childRect.width)
+      reachY = math.max(reachY, childRect.y + childRect.height)
+    end
+  end
+  local padding = self.layoutRules.padding or NO_PADDING
+  local rect = self.layoutRect
+  local maxX = clip.horizontal and math.max(0, reachX + (padding.right or 0) - rect.width) or 0
+  local maxY = clip.vertical and math.max(0, reachY + (padding.bottom or 0) - rect.height) or 0
+  return maxX, maxY
+end
+
+-- Scrolls the children in the flow to the offsets, 0 or negative, along the axes the element clips, rounded onto the
+-- pixel grid and no further than the content reaches. While the layout is out of date the next one bounds the far end.
+---@param x number
+---@param y number
+function UIElement:setScroll(x, y)
+  self.childToScrollIntoView = nil
+  self.areaToScrollIntoView = nil
+  local clip = self.layoutRules.clip
+  x = clip and clip.horizontal and math.min(0, LayoutSolver.toEvenPoints(x)) or 0
+  y = clip and clip.vertical and math.min(0, LayoutSolver.toEvenPoints(y)) or 0
+  if self:hasCurrentLayout() then
+    local maxX, maxY = self:getMaxScroll()
+    x = math.max(x, -maxX)
+    y = math.max(y, -maxY)
+  end
+  if x ~= self.scrollX or y ~= self.scrollY then
+    self.scrollX = x
+    self.scrollY = y
+    self:onScrollChanged()
+  end
+end
+
+-- Scrolls by the distances from where the element is scrolled to now, positive to reveal what is left or above
+---@param dx number
+---@param dy number
+function UIElement:scrollBy(dx, dy)
+  self:setScroll(self.scrollX + dx, self.scrollY + dy)
+end
+
+-- Returns the scroll that shows the stretch from start to start + size in a view of viewSize, changed by as little as it takes
+---@param scroll number
+---@param start number
+---@param size number
+---@param viewSize number
+---@return number
+local function scrollToShow(scroll, start, size, viewSize)
+  if start + size + scroll > viewSize then
+    scroll = viewSize - start - size
+  end
+  if start + scroll < 0 then
+    scroll = -start
+  end
+  return scroll
+end
+
+-- Scrolls just far enough that the area, measured like the layout rects of the children in the flow, is inside the
+-- element; the next layout does it when the layout is out of date
+---@param x number
+---@param y number
+---@param width number
+---@param height number
+function UIElement:scrollAreaIntoView(x, y, width, height)
+  if not self:hasCurrentLayout() then
+    self.childToScrollIntoView = nil
+    self.areaToScrollIntoView = {x = x, y = y, width = width, height = height}
+    return
+  end
+  local rect = self.layoutRect
+  self:setScroll(scrollToShow(self.scrollX, x, width, rect.width), scrollToShow(self.scrollY, y, height, rect.height))
+end
+
+-- Scrolls just far enough that the child in the flow is inside the element; the next layout does it when the layout is
+-- out of date, as for a child just added
+---@param child UiElement
+function UIElement:scrollChildIntoView(child)
+  if self:hasCurrentLayout() then
+    local rect = child.layoutRect
+    self:scrollAreaIntoView(rect.x, rect.y, rect.width, rect.height)
+  else
+    self.childToScrollIntoView = child
+    self.areaToScrollIntoView = nil
+  end
+end
+
+-- overridable function to react to the scroll having changed
+function UIElement:onScrollChanged()
+end
+
+-- Returns how far the children in the flow of an element that clips are drawn and touched from where the layout placed them
+---@return number x
+---@return number y
+function UIElement:getFlowOffset()
+  return self.scrollX, self.scrollY
+end
+
 function UIElement:detach()
   if self.parent then
     for i, child in ipairs(self.parent.children) do
@@ -223,7 +366,7 @@ end
 function UIElement:onDetach()
 end
 
--- The element's position on screen, from the layout rects of the element and its parents
+-- The element's position on screen, from the layout rects of the element and its parents and how far the parents scrolled
 ---@return number x
 ---@return number y
 function UIElement:getScreenPos()
@@ -232,18 +375,15 @@ function UIElement:getScreenPos()
   while element do
     x = x + element.layoutRect.x
     y = y + element.layoutRect.y
-    element = element.parent
+    local parent = element.parent
+    if parent and parent.layoutRules.clip and element.layoutRules.floating == nil then
+      local offsetX, offsetY = parent:getFlowOffset()
+      x = x + offsetX
+      y = y + offsetY
+    end
+    element = parent
   end
   return x, y
-end
-
----@return UiElement # the element at the top of this element's tree
-function UIElement:getRoot()
-  local root = self
-  while root.parent do
-    root = root.parent
-  end
-  return root
 end
 
 -- Returns whether the element is shown right now: it and every parent up to its root are visible. The navigation stack
@@ -278,6 +418,22 @@ function UIElement:playCancelSfx()
   if self:isOnScreen() then
     GAME.theme:playCancelSfx()
   end
+end
+
+-- Sets a named state, which the element's drawing shows
+---@param name string
+---@param isOn boolean
+function UIElement:setState(name, isOn)
+  if (self.states[name] == true) ~= isOn then
+    self.states[name] = isOn
+  end
+end
+
+-- Returns whether the named state is on
+---@param name string
+---@return boolean
+function UIElement:hasState(name)
+  return self.states[name] == true
 end
 
 -- passes a retranslation request through the tree to reach all Labels
@@ -332,11 +488,15 @@ end
 function UIElement:drawSelf()
 end
 
--- Draws the children; an element that clips draws the children in its flow inside its rect, and its floating children on top
+-- Draws the children; an element that clips draws the children in its flow scrolled inside its rect, and its floating
+-- children on top
 function UIElement:drawChildren()
   if self.layoutRules.clip then
     GraphicsUtil.clipStack:pushRectangle(0, 0, self.layoutRect.width, self.layoutRect.height)
+    love.graphics.push("transform")
+    love.graphics.translate(self:getFlowOffset())
     self:drawChildrenInFlow(true)
+    love.graphics.pop()
     GraphicsUtil.clipStack:pop()
     self:drawChildrenInFlow(false)
   else
@@ -379,34 +539,6 @@ function UIElement:inBounds(x, y)
   local screenX, screenY = self:getScreenPos()
   local rect = self.layoutRect
   return x > screenX and x < screenX + rect.width and y > screenY and y < screenY + rect.height
-end
-
-function UIElement:isTouchable()
-  return self.onTouch
-  or self.onHold
-  or self.onDrag
-  or self.onRelease
-end
-
----Returns the foremost visible, enabled element containing the given screen-space coordinates.
----@param x number screen x coordinate of the touch
----@param y number screen y coordinate of the touch
----@return UiElement? element the coordinates intersect, or nil when none match
-function UIElement:getTouchedElement(x, y)
-  if self.isVisible and self.isEnabled and self:inBounds(x, y) then
-    local touchedElement
-    -- Check children in reverse order (last drawn = first touched)
-    for i = #self.children, 1, -1 do
-      touchedElement = self.children[i]:getTouchedElement(x, y)
-      if touchedElement then
-        return touchedElement
-      end
-    end
-
-    if self:isTouchable() then
-      return self
-    end
-  end
 end
 
 ---Passes one input source's presses for this frame to the element it focused, or else handles them itself

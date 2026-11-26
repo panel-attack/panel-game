@@ -44,7 +44,7 @@ local function drawsTheMainMenuImage(mainMenu)
   local theme = themes.MainMenuTestTheme
   local realImages = theme.images
   local drawn = false
-  theme.images = setmetatable({bg_main = {draw = function() drawn = true end}}, {__index = realImages})
+  theme.images = setmetatable({bg_main = {draw = function() drawn = true end, play = function() end}}, {__index = realImages})
   local ok, err = pcall(function()
     mainMenu:refresh()
     mainMenu:drawSelf()

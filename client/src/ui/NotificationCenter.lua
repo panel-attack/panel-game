@@ -1,13 +1,12 @@
 local class = require("common.lib.class")
 local UiElement = require("client.src.ui.UIElement")
 local Notification = require("client.src.ui.Notification")
-local Flux = require("client.lib.flux.flux")
+local Animator = require("client.src.graphics.Animator")
 local consts = require("common.engine.consts")
 local Layout = require("client.src.ui.Layout")
 
 -- Shows notifications in MAX_SHOWN places stacked downward from the top right of the canvas, above every scene.
--- Game puts it in uiRoot after the navigation stack, so it is drawn over the scenes and lasts across scene changes;
--- it never takes touches or input.
+-- Game puts it in uiRoot after the navigation stack, so it is drawn over the scenes and lasts across scene changes.
 -- A notification keeps its place until it has slid out; the rest wait their turn and slide into the places freed.
 -- Each notification floats at the top right, a gap under the notification in the place above it, so it follows that
 -- one's height; once that one leaves, it is pinned where the last layout put it.
@@ -15,7 +14,7 @@ local Layout = require("client.src.ui.Layout")
 ---@field notifications Notification[] the shown notifications, oldest first
 ---@field places table<Notification, integer> the place each shown notification holds, 1 at the top
 ---@field waiting Notification[] the notifications waiting for a place, first to be shown first
----@field tweens table flux group running every notification's animation
+---@field animator Animator runs every notification's animation on the center's clock
 ---@field clock number seconds the center has run
 ---@field nextStartTime number clock time the next notification may slide in, so notifications shown together slide in one after another
 ---@field skippingNextDraw boolean true to leave the notifications out of the next frame
@@ -35,7 +34,7 @@ local NotificationCenter = class(
     self.notifications = {}
     self.places = {}
     self.waiting = {}
-    self.tweens = Flux.group()
+    self.animator = Animator()
     self.clock = 0
     self.nextStartTime = 0
     self.skippingNextDraw = false
@@ -77,7 +76,7 @@ function NotificationCenter:showNow(notification)
   notification:setLayoutRule("id", "notification" .. notification.id)
   notification:setLayoutRule("floating", self:floatingInPlace(place))
   self:addChild(notification)
-  notification:start(self.tweens, self:takeStartDelay(), NotificationCenter.RIGHT_MARGIN)
+  notification:start(self.animator, self:takeStartDelay(), NotificationCenter.RIGHT_MARGIN)
 end
 
 ---@param place integer
@@ -141,7 +140,7 @@ end
 ---@param dt number seconds since the last update
 function NotificationCenter:updateSelf(dt)
   self.clock = self.clock + dt
-  self.tweens:update(dt)
+  self.animator:update(dt)
   self:removeFinished()
 end
 
@@ -159,14 +158,6 @@ function NotificationCenter:removeFinished()
   while #self.notifications < NotificationCenter.MAX_SHOWN and #self.waiting > 0 do
     self:showNow(table.remove(self.waiting, 1))
   end
-end
-
--- Never takes a touch, so a touch on a notification reaches the scene under it
----@param x number screen x coordinate of the touch
----@param y number screen y coordinate of the touch
----@return nil
-function NotificationCenter:getTouchedElement(x, y)
-  return nil
 end
 
 -- Never hands a notification input, so showing one never takes it from the scene

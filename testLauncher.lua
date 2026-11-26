@@ -57,6 +57,7 @@ end
 
 local allTests = {
   "common.tests.lib.JsonPrecisionTests",
+  "client.tests.AnimatorTests",
   "client.tests.AnimationLoaderTests",
   "client.tests.UpdatingImageTests",
   "client.tests.GameBaseStageBackgroundTests",
@@ -154,6 +155,7 @@ local allTests = {
   "client.tests.DiscreteImageSliderTests",
   "client.tests.ImageContainerTests",
   "client.tests.ScrollContainerTests",
+  "client.tests.TouchHandlerTests",
   "client.tests.InputFieldTests",
   "client.tests.PlayerSettingsTests",
   "client.tests.CharacterSelectSoundTests",

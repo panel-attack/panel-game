@@ -4,6 +4,7 @@ local Notification = require("client.src.ui.Notification")
 local consts = require("common.engine.consts")
 local Scene = require("client.src.scenes.Scene")
 local InputSource = require("client.src.input.InputSource")
+local touchHandler = require("client.src.ui.touchHandler")
 
 local FRAME = 1 / 60
 
@@ -340,6 +341,7 @@ local function testNotificationsLastAcrossSceneChanges()
     stack:push(OtherScene({}))
     GAME.uiRoot:update(FRAME)
     stack.scenes, stack.transition = scenes, transition
+    stack:attachDrawableRoots()
 
     assert(center.parent == GAME.uiRoot and notification.parent == center, "a notification should still be shown after the scene changed")
     assert(center.clock > clock, "updating uiRoot should run the notifications on through the scene change")
@@ -349,14 +351,18 @@ end
 testNotificationsLastAcrossSceneChanges()
 
 local function testNotificationsNeverTakeTouches()
-  withGameNotification(function(_, notification)
-    notification.onTouch = function() end
+  withGameNotification(function(center, notification)
     GAME.uiRoot:layOut()
     local x, y = notification:getScreenPos()
 
-    local touched = GAME.uiRoot:getTouchedElement(x + notification.layoutRect.width / 2, y + notification.layoutRect.height / 2)
+    touchHandler:touch(x + notification.layoutRect.width / 2, y + notification.layoutRect.height / 2)
+    local pressed = touchHandler.touchedElement
+    touchHandler:release(x + notification.layoutRect.width / 2, y + notification.layoutRect.height / 2)
 
-    assert(touched ~= notification, "a touch on a notification should go to the scene under it")
+    while pressed do
+      assert(pressed ~= center, "a touch on a notification should go to the scene under it")
+      pressed = pressed.parent
+    end
   end)
 end
 
@@ -389,6 +395,7 @@ local function testAScreenshotFrameDrawsUiRootWithoutTheNotifications()
     love.graphics.setCanvas({canvas, stencil = true})
 
     center:skipNextDraw()
+    GAME.uiRoot:layOut()
     GAME.uiRoot:draw()
     local skippedDraws = draws
     GAME.uiRoot:draw()

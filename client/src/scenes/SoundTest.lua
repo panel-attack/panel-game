@@ -215,7 +215,7 @@ end
 
 function SoundTest:update(dt)
   self.soundTestMenu:receiveInputs(InputSource.anyPlayer, dt)
-  self.backgroundImg:update(dt)
+  self.backgroundImg:play(self.animator)
 end
 
 function SoundTest:draw()

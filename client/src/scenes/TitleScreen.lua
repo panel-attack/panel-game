@@ -16,7 +16,7 @@ local TitleScreen = class(
     local theme = themes[config.theme]
     self.backgroundImg = theme.images.bg_title
     if theme:hasScene(Theme.TITLE_SCENE_FILE) then
-      self.sceneAnimation = SceneAnimation(Theme.TITLE_SCENE_FILE)
+      self.sceneAnimation = SceneAnimation(Theme.TITLE_SCENE_FILE, nil, self.animator)
     end
     self.music = "title_screen"
     self.opacity = START_OPACITY
@@ -32,7 +32,7 @@ function TitleScreen:startAnimation()
     target = 1
   end
 
-  self.tweens:to(self, 0.6, { opacity = target })
+  self.animator:to(self, 0.6, { opacity = target })
       :ease("quadinout")
       :oncomplete(function()
           self.direction = -self.direction
@@ -51,7 +51,7 @@ end
 
 function TitleScreen:update(dt)
   if self.backgroundImg then
-    self.backgroundImg:update(dt)
+    self.backgroundImg:play(self.animator)
   end
   local keyPressed = tableUtils.trueForAny(input.allKeys.isDown, function(key) return key end)
   if love.mouse.isDown(1, 2, 3) or #love.touch.getTouches() > 0 or keyPressed then

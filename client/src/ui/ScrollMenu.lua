@@ -20,15 +20,15 @@ ScrollContainer)
 
 ScrollMenu.TYPE = "ScrollMenu"
 
-function ScrollMenu:onRelease(x, y, duration)
+-- Selects the child a touch landed in, taking focus back from another child that had it. The menu stays scrolled where
+-- it is, so the child stays under the touch until the release.
+---@param child UiElement
+function ScrollMenu:selectChild(child)
   local focused = self.focusedChild[InputSource.anyPlayer]
-  if self.touchedChild and focused and focused ~= self.touchedChild then
+  if focused and focused ~= child then
     self:unfocusChild(InputSource.anyPlayer)
   end
-  if not self.scrolling then
-    self:select(self.touchedChild)
-  end
-  ScrollContainer.onRelease(self, x, y, duration)
+  self.selectedIndex = self:selectableIndexOf(child) or self.selectedIndex
 end
 
 function ScrollMenu:selectPrevious()
@@ -45,7 +45,7 @@ function ScrollMenu:selectPrevious()
       break
     end
   end
-  self:keepChildVisible(child)
+  self:scrollChildIntoView(child)
   self:playMoveSfx()
 end
 
@@ -63,14 +63,14 @@ function ScrollMenu:selectNext()
       break
     end
   end
-  self:keepChildVisible(child)
+  self:scrollChildIntoView(child)
   self:playMoveSfx()
 end
 
 function ScrollMenu:selectLast()
   self.selectedIndex = self:getLastIndex()
   local child = self.children[self.selectedIndex]
-  self:keepChildVisible(child)
+  self:scrollChildIntoView(child)
 end
 
 function ScrollMenu:getLastIndex()
@@ -82,17 +82,28 @@ function ScrollMenu:getLastIndex()
   end
 end
 
+-- Returns the element's place among the children if it is one that can be selected
+---@param uiElement UiElement
+---@return integer?
+function ScrollMenu:selectableIndexOf(uiElement)
+  for i, child in ipairs(self.children) do
+    if child == uiElement and child:handlesInputs() and child.isEnabled and child.isVisible then
+      return i
+    end
+  end
+end
+
+-- Selects the element and scrolls it into view
 ---@param uiElement UiElement
 ---@return boolean # if the selection was successful
 function ScrollMenu:select(uiElement)
-  for i, child in ipairs(self.children) do
-    if child == uiElement and child:handlesInputs() and child.isEnabled and child.isVisible then
-      self.selectedIndex = i
-      self:keepChildVisible(child)
-      return true
-    end
+  local index = self:selectableIndexOf(uiElement)
+  if not index then
+    return false
   end
-  return false
+  self.selectedIndex = index
+  self:scrollChildIntoView(uiElement)
+  return true
 end
 
 ---@param inputSource InputSource
@@ -136,9 +147,12 @@ function ScrollMenu:drawChildren()
   if selected and selected.isVisible then
     local rect = selected.layoutRect
     GraphicsUtil.clipStack:pushRectangle(0, 0, self.layoutRect.width, self.layoutRect.height)
+    love.graphics.push("transform")
+    love.graphics.translate(self:getFlowOffset())
     GraphicsUtil.setColor(0.6, 0.6, 1, 0.5)
     love.graphics.rectangle("fill", rect.x, rect.y, rect.width, rect.height)
     love.graphics.rectangle("line", rect.x, rect.y, rect.width, rect.height)
+    love.graphics.pop()
     GraphicsUtil.clipStack:pop()
   end
   ScrollContainer.drawChildren(self)

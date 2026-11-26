@@ -2,19 +2,17 @@
 -- The rules are Clay's element declaration: sizing, padding, childGap, childAlignment and layoutDirection place an
 -- element's children, clip scrolls them, and floating takes an element out of its parent's flow and pins it.
 -- It follows Clay's passes: fit widths, grow and shrink widths, wrap text, fit then grow and shrink heights,
--- then positions, each element's floating children last, then the rounded edges. A clipped element's childOffset moves
--- the children in its flow, never the floating ones.
+-- then positions, each element's floating children last, then the rounded edges. Scrolling is no part of the
+-- layout: an element that clips moves the children in its flow when it draws them (see UIElement:setScroll).
 -- Every edge is worked out exactly from the root's origin, then rounded to even points there, so each element is
--- within a point of its exact place however deep it is, and siblings that meet meet on the same point. Child offsets and
--- floating offsets are part of that exact place, so they are rounded with it. Content is measured up to even points first,
+-- within a point of its exact place however deep it is, and siblings that meet meet on the same point. Floating
+-- offsets are part of that exact place, so they are rounded with it. Content is measured up to even points first,
 -- so rounding the edges of an element sized to its content never leaves it narrower than its text.
 --
 -- A node is any table with `children` and `layoutRules`. It may also have
 --   measureContentWidth() returning its content's natural and smallest width, for sizing it to fit
 --   measureContentHeight(width) returning its content's height at that width, for wrapping text
 --   onLayoutSized(width, height) told its final size once the layout is done
---   getChildOffset(axis) returning how far its flow is scrolled along the axis once the flow is placed unscrolled at
---   its exact places, in place of its clip's childOffset, for keeping a child in view
 -- The solver writes `layoutRect` ({x, y, width, height}, x and y measured from the parent) and keeps its own
 -- working data in `layoutState`. Both tables are created once and reused.
 
@@ -49,7 +47,6 @@
 ---@class LayoutClip
 ---@field horizontal boolean? clips and scrolls horizontally; the children in the flow never shrink to fit along it
 ---@field vertical boolean? clips and scrolls vertically
----@field childOffset LayoutVector? how far the children in the flow are moved, negative to scroll them left or up
 
 ---@alias LayoutAttachPoint "leftTop"|"leftCenter"|"leftBottom"|"centerTop"|"centerCenter"|"centerBottom"|"rightTop"|"rightCenter"|"rightBottom"
 
@@ -132,6 +129,7 @@ LayoutSolver.FLOAT_TOLERANCE = FLOAT_TOLERANCE
 local function toEvenPoints(position)
   return 2 * math.round(position / 2)
 end
+LayoutSolver.toEvenPoints = toEvenPoints
 
 -- Rounds a measured length up to a whole even number of points, ignoring float error. An even length keeps its size
 -- when both of its edges are rounded to even points.
@@ -477,27 +475,6 @@ local function setPosition(node, child, axis, position)
   child.layoutRect[axis.position] = position
 end
 
--- Moves every child in the node's flow along the axis by the node's child offset, asking the node for it when it keeps a
--- child in view and reading it from its clip otherwise
----@param node UiElement
----@param axis LayoutAxis
-local function offsetFlowChildren(node, axis)
-  local rules = node.layoutState.rules
-  local offset
-  if node.getChildOffset then
-    offset = node:getChildOffset(axis)
-  else
-    offset = rules.clip and (rules.clip.childOffset or NO_VECTOR)[axis.position]
-  end
-  if offset and offset ~= 0 then
-    for _, child in ipairs(node.children) do
-      if isInFlow(child) then
-        setPosition(node, child, axis, child.layoutRect[axis.position] + offset)
-      end
-    end
-  end
-end
-
 -- Pass 5: places the children in the flow
 ---@param node UiElement
 local function placeFlowChildren(node)
@@ -531,7 +508,6 @@ local function placeFlowChildren(node)
         end
       end
     end
-    offsetFlowChildren(node, axis)
   end
 end
 

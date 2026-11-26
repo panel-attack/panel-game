@@ -212,7 +212,6 @@ function PortraitGame:flipToPortrait()
           floating = Layout.floatAt("rightBottom")
         }
       })
-      ---@diagnostic disable-next-line: duplicate-set-field
       raiseButton.onTouch = function(button, x, y)
         button.backgroundColor[4] = 1
         stack.touchInputDetector.touchingRaise = true

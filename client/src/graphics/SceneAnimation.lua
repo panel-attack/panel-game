@@ -1,11 +1,11 @@
 local class = require("common.lib.class")
 local AnimationLoader = require("client.src.graphics.AnimationLoader")
-local Flux = require("client.lib.flux.flux")
 local Theme = require("client.src.mods.Theme")
 local fileUtils = require("client.src.FileUtils")
 local consts = require("common.engine.consts")
 
--- An animation file with its own tweens, from the given folder, such as a stage's, or else from the current theme's scenes folder.
+-- An animation file, from the given folder, such as a stage's, or else from the current theme's scenes folder,
+-- its tracks running on an animator.
 -- Its image paths and file refs are relative to the given folder, or else to the theme folder.
 -- It reloads itself when the density the canvas draws at changed since it loaded, as its still parts are baked at that density, and one from
 -- the theme also when the theme changed, freeing the images it replaces.
@@ -15,21 +15,22 @@ local consts = require("common.engine.consts")
 ---@field fileName string the animation file inside its folder
 ---@field folder string? the folder holding the file, nil for the current theme's scenes folder
 ---@field drawables table[] the drawables loaded from the file
----@field tweens table the flux group running the drawables' tracks
+---@field animator Animator the animator running the drawables' tracks
 ---@field themePath string? the path of the theme the drawables were loaded from, nil when it has its own folder
 ---@field drawScale number the canvas's snapped scale the drawables were loaded for, see GAME:newCanvasSnappedScale
 ---@field fallbackImage UpdatingImage? the image drawn in place of a missing file
----@overload fun(fileName: string, folder: string?, fallbackImage: UpdatingImage?): SceneAnimation
+---@overload fun(fileName: string, folder: string?, animator: Animator, fallbackImage: UpdatingImage?): SceneAnimation
 local SceneAnimation = class(
 ---@param self SceneAnimation
 ---@param fileName string
 ---@param folder string? the folder holding the file, nil for the current theme's scenes folder
+---@param animator Animator the animator its tracks run on
 ---@param fallbackImage UpdatingImage? the image drawn in place of a missing file
-function(self, fileName, folder, fallbackImage)
+function(self, fileName, folder, animator, fallbackImage)
   self.fileName = fileName
   self.folder = folder
   self.fallbackImage = fallbackImage
-  self:load()
+  self:load(animator)
 end)
 
 -- Errors naming the file unless its drawables are one container the canvas's size at the canvas's origin, unscaled and unrotated
@@ -47,14 +48,15 @@ local function assertCanvasContainer(drawables, filePath)
   end
 end
 
--- Loads the drawables for the canvas's current snapped scale, from the current theme if it has no folder, dropping any running tracks
--- and freeing the images of the drawables it replaces
-function SceneAnimation:load()
+-- Loads the drawables for the canvas's current snapped scale, from the current theme if it has no folder, their tracks starting on
+-- the animator, and frees the images of the drawables it replaces
+---@param animator Animator
+function SceneAnimation:load(animator)
   if self.drawables then
     AnimationLoader.releaseImages(self.drawables)
   end
   self.drawScale = GAME:newCanvasSnappedScale()
-  self.tweens = Flux.group()
+  self.animator = animator
   local rootFolder, filePath
   if self.folder then
     rootFolder = self.folder .. "/"
@@ -65,7 +67,7 @@ function SceneAnimation:load()
     filePath = rootFolder .. Theme.SCENES_FOLDER .. "/" .. self.fileName
   end
   if fileUtils.exists(filePath) then
-    self.drawables = AnimationLoader.loadFromFile(rootFolder, filePath, self.tweens, self.drawScale)
+    self.drawables = AnimationLoader.loadFromFile(rootFolder, filePath, animator, self.drawScale)
     assertCanvasContainer(self.drawables, filePath)
   else
     self.drawables = {}
@@ -89,16 +91,17 @@ function SceneAnimation:getFallbackImage()
   end
 end
 
--- Updates the scene
----@param dt number seconds since the last update
-function SceneAnimation:update(dt)
-  if self:isStale() then
-    self:load()
+-- Runs the tracks on the animator, reloading the drawables when they are stale or ran on another animator, so their tracks start over,
+-- or the fallback image's scroll when the file is missing
+---@param animator Animator
+function SceneAnimation:play(animator)
+  if self.animator ~= animator or self:isStale() then
+    AnimationLoader.stopTracks(self.drawables, self.animator)
+    self:load(animator)
   end
-  self.tweens:update(dt)
   local fallbackImage = self:getFallbackImage()
   if fallbackImage then
-    fallbackImage:update(dt)
+    fallbackImage:play(animator)
   end
 end
 

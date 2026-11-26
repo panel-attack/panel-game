@@ -342,7 +342,7 @@ end
 function InputConfigMenu:update(dt)
 
   if self.backgroundImg then
-    self.backgroundImg:update(dt)
+    self.backgroundImg:play(self.animator)
   end
 
   -- Only allow menu navigation when not setting a key

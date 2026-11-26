@@ -4,7 +4,10 @@ local UIElement = require("client.src.ui.UIElement")
 local Layout = require("client.src.ui.Layout")
 local class = require("common.lib.class")
 local consts = require("common.engine.consts")
+local tableUtils = require("common.lib.tableUtils")
 
+-- The stack of scenes, an element of the game's ui tree. Its children are the ui roots it draws right now, so the scene
+-- on screen is laid out and touched as part of that one tree; see attachDrawableRoots.
 ---@class NavigationStack : UiElement
 ---@field scenes Scene[]
 ---@field transition table?
@@ -39,7 +42,7 @@ function NavigationStack:push(newScene, transition)
     logger.debug("Pushing scene " .. newScene.name .. " on top of stack")
     self.scenes[#self.scenes+1] = newScene
   end
-  self:showOnlyDrawnScene()
+  self:attachDrawableRoots()
 end
 
 -- transitions to the previous scene optionally using a specified transition
@@ -60,7 +63,7 @@ function NavigationStack:pop(transition, callback)
     self.transition = transition
     self.callback = callback
     table.remove(self.scenes)
-    self:showOnlyDrawnScene()
+    self:attachDrawableRoots()
   end
 end
 
@@ -87,7 +90,7 @@ function NavigationStack:popToTop(transition, callback)
     for i = #self.scenes, 2, -1 do
       self.scenes[i] = nil
     end
-    self:showOnlyDrawnScene()
+    self:attachDrawableRoots()
   end
 end
 
@@ -124,7 +127,7 @@ function NavigationStack:popToName(name, transition, callback)
     for i = #self.scenes, targetIndex + 1, -1 do
       self.scenes[i] = nil
     end
-    self:showOnlyDrawnScene()
+    self:attachDrawableRoots()
   end
 end
 
@@ -145,7 +148,7 @@ function NavigationStack:replace(newScene, transition, callback)
     self.transition = transition
     self.callback = callback
     self.scenes[#self.scenes] = newScene
-    self:showOnlyDrawnScene()
+    self:attachDrawableRoots()
   else
     self:push(newScene, transition)
   end
@@ -190,6 +193,31 @@ function NavigationStack:showOnlyDrawnScene()
   end
 end
 
+-- Makes the stack's children the ui roots it can draw: the running transition's and those of its two scenes, or else the
+-- root of the scene on top, and shows the one drawn right now. A scene under the top is in no tree, so it is not laid
+-- out until it is shown again. Nothing under the stack is touched while a transition runs.
+function NavigationStack:attachDrawableRoots()
+  local roots = {}
+  local transition = self.transition
+  if transition then
+    roots[#roots + 1] = transition.oldScene and transition.oldScene.uiRoot
+    roots[#roots + 1] = transition.newScene and transition.newScene.uiRoot
+    roots[#roots + 1] = transition.uiRoot
+  elseif #self.scenes > 0 then
+    roots[1] = self.scenes[#self.scenes].uiRoot
+  end
+  for i = #self.children, 1, -1 do
+    if not tableUtils.indexOf(roots, self.children[i]) then
+      self.children[i]:detach()
+    end
+  end
+  for _, root in ipairs(roots) do
+    self:addChild(root)
+  end
+  self.isEnabled = transition == nil
+  self:showOnlyDrawnScene()
+end
+
 function NavigationStack:updateSelf(dt)
   if self.transition then
     self.transition:update(dt)
@@ -200,7 +228,7 @@ function NavigationStack:updateSelf(dt)
         self.transition.oldScene.uiRoot:setVisibility(false)
       end
       self.transition = nil
-      self:showOnlyDrawnScene()
+      self:attachDrawableRoots()
       self.scenes[#self.scenes]:applyMusic()
       if self.callback then
         self.callback()
@@ -219,14 +247,12 @@ function NavigationStack:updateSelf(dt)
   end
 end
 
--- Lays out what the next draw shows: the transition while one runs, the scene on top otherwise. Each scene's ui is a
--- tree of its own, not a child of the navigation stack.
-function NavigationStack:layOutScenes()
-  if self.transition then
-    self.transition:layOut()
-  elseif #self.scenes > 0 then
-    self.scenes[#self.scenes]:layOut()
-  end
+-- Updates nothing here: the scenes and transitions update their own ui roots, in NavigationStack:updateSelf
+function NavigationStack:updateChildren(dt)
+end
+
+-- Draws nothing here: the scene or transition draws its own ui root, in NavigationStack:drawSelf
+function NavigationStack:drawChildren()
 end
 
 function NavigationStack:drawSelf()
@@ -238,14 +264,6 @@ function NavigationStack:drawSelf()
     end
     self.scenes[#self.scenes]:draw()
   end
-end
-
-function NavigationStack:getTouchedElement(x, y)
-  local activeScene = self:getActiveScene()
-  if activeScene and activeScene.uiRoot then
-    return activeScene.uiRoot:getTouchedElement(x, y)
-  end
-  return nil
 end
 
 return NavigationStack

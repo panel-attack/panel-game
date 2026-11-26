@@ -1,7 +1,7 @@
 local AnimationBaker = require("client.src.graphics.AnimationBaker")
 local AnimationLoader = require("client.src.graphics.AnimationLoader")
 local GraphicsUtil = require("client.src.graphics.graphics_util")
-local Flux = require("client.lib.flux.flux")
+local Animator = require("client.src.graphics.Animator")
 local consts = require("common.engine.consts")
 local TestUtils = require("common.tests.TestUtils")
 local FileUtils = require("client.src.FileUtils")
@@ -95,29 +95,29 @@ local function render(drawables, density)
 end
 
 -- Loads the bake scene baked at the given density, and as data, which draws each part on its own
-local function loadBakedAndPartByPart(drawScale, bakedTweens, partByPartTweens)
-  local baked = AnimationLoader.loadFromFile(TEST_PATH, TEST_PATH .. "bakeScene.json", bakedTweens, drawScale)
-  local partByPart = AnimationLoader.loadFromData(TEST_PATH, FileUtils.readJsonFile(TEST_PATH .. "bakeScene.json"), partByPartTweens)
+local function loadBakedAndPartByPart(drawScale, bakedAnimator, partByPartAnimator)
+  local baked = AnimationLoader.loadFromFile(TEST_PATH, TEST_PATH .. "bakeScene.json", bakedAnimator, drawScale)
+  local partByPart = AnimationLoader.loadFromData(TEST_PATH, FileUtils.readJsonFile(TEST_PATH .. "bakeScene.json"), partByPartAnimator)
   assert(baked[1].bakedRun, "The file's still parts should be baked")
   return baked, partByPart
 end
 
 -- A baked scene looks the same as one drawn part by part, while its moving part moves
 local function testBakedSceneDrawsTheSame()
-  local bakedTweens, partByPartTweens = Flux.group(), Flux.group()
-  local baked, partByPart = loadBakedAndPartByPart(1, bakedTweens, partByPartTweens)
+  local bakedAnimator, partByPartAnimator = Animator(), Animator()
+  local baked, partByPart = loadBakedAndPartByPart(1, bakedAnimator, partByPartAnimator)
 
   local before = TestUtils.largestPixelDifference(render(partByPart, 1), render(baked, 1))
   assert(before <= 1, "The baked scene should look the same before anything moves")
-  bakedTweens:update(0.5)
-  partByPartTweens:update(0.5)
+  bakedAnimator:update(0.5)
+  partByPartAnimator:update(0.5)
   local after = TestUtils.largestPixelDifference(render(partByPart, 1), render(baked, 1))
   assert(after <= 1, "The baked scene should look the same once Mover moved")
 end
 
 -- A run baked at a density its area's pixels don't divide by still lands on the same pixels as its parts
 local function testBakedSceneDrawsTheSameAtAFractionalDensity()
-  local baked, partByPart = loadBakedAndPartByPart(1.5, Flux.group(), Flux.group())
+  local baked, partByPart = loadBakedAndPartByPart(1.5, Animator(), Animator())
 
   local difference = TestUtils.largestPixelDifference(render(partByPart, 1.5), render(baked, 1.5))
   assert(difference <= 1, "The baked scene should look the same at 1.5x, it is " .. difference .. "/255 off")
@@ -125,7 +125,7 @@ end
 
 -- Each run of still parts is drawn as one image, so the scene draws one image per run plus its moving part
 local function testEachRunIsDrawnAsOneImage()
-  local baked = AnimationLoader.loadFromFile(TEST_PATH, TEST_PATH .. "bakeScene.json", Flux.group(), 1)
+  local baked = AnimationLoader.loadFromFile(TEST_PATH, TEST_PATH .. "bakeScene.json", Animator(), 1)
   local draws = 0
   local originalDraw = love.graphics.draw
   love.graphics.draw = function(...)
@@ -141,7 +141,7 @@ end
 
 -- A run is baked only as far as the canvas, as nothing still ever moves onto it
 local function testRunIsCroppedToTheShownArea()
-  local baked = AnimationLoader.loadFromFile(TEST_PATH, TEST_PATH .. "runPastTheCanvas.json", Flux.group(), 1)
+  local baked = AnimationLoader.loadFromFile(TEST_PATH, TEST_PATH .. "runPastTheCanvas.json", Animator(), 1)
 
   local run = baked[1].bakedRun.texture
   assertEqual(run:getPixelWidth(), consts.CANVAS_WIDTH - 1250, "The run should stop at the canvas's right edge")

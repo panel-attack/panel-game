@@ -446,10 +446,9 @@ function Game:update(dt)
   SoundController:update()
   self.rich_presence:runCallbacks()
 
-  -- the ui is laid out once before it is drawn, the scenes' trees as well as the tree the navigation stack is in
+  -- the ui is laid out once before it is drawn, the shown scene's as part of it
   prof.push("layout")
   self.uiRoot:layOut()
-  self.navigationStack:layOutScenes()
   prof.pop("layout")
 end
 

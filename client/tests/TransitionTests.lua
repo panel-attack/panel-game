@@ -6,8 +6,8 @@ local function testBothScenesAnimateDuringTheTransition()
   local newScene = Scene({})
   local oldTarget = {value = 0}
   local newTarget = {value = 0}
-  oldScene.tweens:to(oldTarget, 1, {value = 1}):ease("linear")
-  newScene.tweens:to(newTarget, 1, {value = 1}):ease("linear")
+  oldScene.animator:to(oldTarget, 1, {value = 1}):ease("linear")
+  newScene.animator:to(newTarget, 1, {value = 1}):ease("linear")
   local transition = Transition(0, 2)
   transition.oldScene = oldScene
   transition.newScene = newScene

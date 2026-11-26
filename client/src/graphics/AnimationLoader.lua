@@ -4,7 +4,8 @@ local FileUtils = require("client.src.FileUtils")
 local TextureAtlas = require("client.src.graphics.TextureAtlas")
 local AnimationBaker = require("client.src.graphics.AnimationBaker")
 
--- A class that loads a heirarchy of images and animations from an animation file and returns the drawable objects. Animations are added to the flux group passed in, so they only run while its owner updates that group.
+-- A class that loads a heirarchy of images and animations from an animation file and returns the drawable objects.
+-- Their tracks run on the animator passed in, so they only move while its owner updates it.
 ---@class AnimationLoader
 local AnimationLoader =
   class(
@@ -64,10 +65,10 @@ local function validateTrackRepeat(track)
   end
 end
 
--- Builds the flux animation for the given track step on the target in the given flux group
----@param tweens table the flux group the step's tween is added to
+-- Builds the given track step on the target in the given animator
+---@param animator Animator the animator the step runs on
 ---@param carriedSeconds number? the time the previous step's last update ran past its end, which this step spends on that same update
-local function buildTrackStep(target, track, currentStep, stepAmount, tweens, carriedSeconds)
+local function buildTrackStep(target, track, currentStep, stepAmount, animator, carriedSeconds)
   local step = track.steps[currentStep]
   local targetProperties
   if stepAmount > 0 then
@@ -75,7 +76,7 @@ local function buildTrackStep(target, track, currentStep, stepAmount, tweens, ca
   else
     targetProperties = step.reverseProperties
   end
-  local tween = tweens:to(target, step.durationSeconds, targetProperties)
+  local tween = animator:to(target, step.durationSeconds, targetProperties)
 
   -- Save off the previous properties on the track in case they are needed for looping or yoyo
   if stepAmount > 0 then
@@ -111,12 +112,31 @@ local function buildTrackStep(target, track, currentStep, stepAmount, tweens, ca
     end
 
     if nextStep >= 1 and nextStep <= #track.steps then
-      buildTrackStep(target, track, nextStep, stepAmount, tweens, tween.overshoot)
+      buildTrackStep(target, track, nextStep, stepAmount, animator, tween.overshoot)
     end
   end)
 
   if carriedSeconds then
-    tweens:advance(tween, carriedSeconds)
+    animator:advance(tween, carriedSeconds)
+  end
+end
+
+-- Starts the track on the target in the animator, from its first step
+---@param target table the drawable whose properties the track changes
+---@param track table the track as an animation file writes it
+---@param animator Animator
+function AnimationLoader.playTrack(target, track, animator)
+  validateTrackRepeat(track)
+  buildTrackStep(target, track, 1, 1, animator)
+end
+
+-- Stops the tracks of the drawables and their children in the animator, for drawables that are no longer drawn
+---@param drawables table[]
+---@param animator Animator
+function AnimationLoader.stopTracks(drawables, animator)
+  for _, drawable in ipairs(drawables) do
+    animator:stop(drawable)
+    AnimationLoader.stopTracks(drawable.children, animator)
   end
 end
 
@@ -146,9 +166,9 @@ end
 
 -- Loads one drawable from the given file directory root and the given animation data.
 -- @return table the drawable or nil if it didn't need to be loaded
----@param tweens table the flux group the node's tracks are added to
+---@param animator Animator? the animator the node's tracks run on, needed only when it has tracks
 ---@param images table the images already loaded for this file, see loadSharedImage
-local function loadDrawables(rootPath, animationData, tweens, images)
+local function loadDrawables(rootPath, animationData, animator, images)
   if animationData.ref == nil and animationData.templateOnly then
     -- Skip templateOnly items unless they are references
     return nil
@@ -224,11 +244,11 @@ local function loadDrawables(rootPath, animationData, tweens, images)
   assert(obj.pivot == "topLeft" or obj.width > 0 and obj.height > 0, "Objects must have width and height if you have a non top left pivot")
 
   for _,track in ipairs(animationData.animationTracks or {}) do
-    validateTrackRepeat(track)
-    buildTrackStep(obj, track, 1, 1, tweens)
+    assert(animator, "Animation tracks need an animator to run on")
+    AnimationLoader.playTrack(obj, track, animator)
   end
   for _, childData in ipairs(animationData.children or {}) do
-    local drawable = loadDrawables(rootPath, childData, tweens, images)
+    local drawable = loadDrawables(rootPath, childData, animator, images)
     if drawable then
       obj.children[#obj.children+1] = drawable
     end
@@ -462,14 +482,14 @@ end
 -- Builds the drawables of animation data that has no refs left to resolve
 ---@param rootPath string the folder image file paths are written from
 ---@param rootData table the animation data, with its nodes in drawables
----@param tweens table the flux group the animations are added to, its owner updates it
+---@param animator Animator? the animator the tracks run on, its owner updates it, needed only when the data has tracks
 ---@return table[] drawables
 ---@return table images the images loaded for the data's file paths, see loadSharedImage
-local function buildDrawables(rootPath, rootData, tweens)
+local function buildDrawables(rootPath, rootData, animator)
   local drawables = {}
   local images = {}
   for _, data in ipairs(rootData.drawables) do
-    local drawable = loadDrawables(rootPath, data, tweens, images)
+    local drawable = loadDrawables(rootPath, data, animator, images)
     if drawable then
       drawables[#drawables+1] = drawable
     end
@@ -483,10 +503,10 @@ end
 -- when the density it draws at changes. Only the file's drawables draw its images, so releaseImages can free them.
 -- @param rootPath String the folder image file paths and file refs are written from
 -- @param filePath String the full path of the file to load
----@param tweens table the flux group the animations are added to, its owner updates it
+---@param animator Animator the animator the tracks run on, its owner updates it
 ---@param drawScale number the pixel density the drawables are drawn at, GAME:newCanvasSnappedScale() for the canvas
--- @return table an array of drawables representing all the objects with flux animations setup
-function AnimationLoader.loadFromFile(rootPath, filePath, tweens, drawScale)
+-- @return table an array of drawables representing all the objects with their tracks running
+function AnimationLoader.loadFromFile(rootPath, filePath, animator, drawScale)
   local loadedFileTables = {}   -- filePath → parsed table
   local idLookupTable   = {}    -- "id" → node table
 
@@ -501,7 +521,7 @@ function AnimationLoader.loadFromFile(rootPath, filePath, tweens, drawScale)
   end
 
   -- Finally once the full data structure is setup, it is converted into separate drawable objects.
-  local drawables, images = buildDrawables(rootPath, rootData, tweens)
+  local drawables, images = buildDrawables(rootPath, rootData, animator)
   -- without a window there is nothing to draw run images or pages with
   if love.graphics.isActive() then
     AnimationBaker.bake(drawables, worldTransforms(drawables), drawScale)
@@ -529,10 +549,10 @@ end
 -- Data made in code can give a node a texture, an image that's already loaded, in place of its filePath.
 ---@param rootPath string the folder image file paths are written from
 ---@param rootData table the animation data, with its nodes in drawables
----@param tweens table the flux group the animations are added to, its owner updates it
+---@param animator Animator? the animator the tracks run on, its owner updates it, needed only when the data has tracks
 ---@return table[] drawables
-function AnimationLoader.loadFromData(rootPath, rootData, tweens)
-  return (buildDrawables(rootPath, rootData, tweens))
+function AnimationLoader.loadFromData(rootPath, rootData, animator)
+  return (buildDrawables(rootPath, rootData, animator))
 end
 
 -- DRAWING CODE
